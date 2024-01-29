@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
     while(true){
         sleep(1);
         bpf_map__lookup_elem(skel->maps.my_config,&cur_key,sizeof(int),&value,sizeof(long long),BPF_ANY);
-        printf("mdr nombre octets : %lld\n",value);
+        printf("nombre octets : %lld\n",value);
     }
     
 
