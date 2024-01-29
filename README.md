@@ -20,3 +20,14 @@ pour le programme "packet_compteur" , il faut attacher le programme à la mano :
 
 
 ( pour regarder l'output du prog ====> sudo cat /sys/kernel/debug/tracing/trace_pipe )
+
+
+
+Pour le programme packet_compteur_egress il suffit de faire:
+
+- make clean puis make 
+
+- sudo ./packet_compteur et hop ça affiche le résultat directement sur le terminal (à chaque seconde)
+
+
+( vérifier le nom de l'interface réseau dans le programme packet_compteur.c, mettre une interface qui existe sur votre pc à la place)
