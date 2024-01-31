@@ -4,7 +4,6 @@
 #include <errno.h>
 #include <stdlib.h> 
 #include <sys/resource.h>
-#include <unistd.h>
 #include <net/if.h>
 #include "packet_compteur_egress.skel.h"
 
@@ -54,8 +53,6 @@ int main(int argc, char const *argv[])
     }
 
     LIBBPF_OPTS(bpf_tc_hook, hook, .ifindex = if_nametoindex(argv[3]), .attach_point = flow);
-
-    
     
 	int r = bpf_tc_hook_create(&hook);
 
@@ -69,12 +66,18 @@ int main(int argc, char const *argv[])
     }
 
 
-    int cur_key=0;
+    
+    int cur_key = 0;
     long long value;
+    long long time;
     while(true){
+
+        if( bpf_map__lookup_elem(skel->maps.my_config,&cur_key,sizeof(int),&value,sizeof(long long),BPF_ANY) < 0 ){ printf("merde lol\n");return 5;};
+        cur_key++;
+        if( bpf_map__lookup_elem(skel->maps.my_config,&cur_key,sizeof(int),&time,sizeof(long long),BPF_ANY) < 0 ) { printf("merde\n");return 6;};
+        printf("nombre octets : %lld , time = %lld\n",value,time);
+        cur_key=0;
         sleep(1);
-        bpf_map__lookup_elem(skel->maps.my_config,&cur_key,sizeof(int),&value,sizeof(long long),BPF_ANY);
-        printf("nombre octets : %lld\n",value);
     }
     
     opts.prog_fd = opts.prog_id = 0;

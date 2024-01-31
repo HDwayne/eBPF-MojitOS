@@ -9,29 +9,44 @@ struct {
         __uint(type, BPF_MAP_TYPE_ARRAY);
         __type(key, int);
         __type(value, long long) ;
-        __uint(max_entries, 1);
+        __uint(max_entries, 2);
 } my_config SEC(".maps");
 
-int key = 0;
 
 SEC("tc")
 int tc_test(struct __sk_buff *skb) {
+	int key = 0;
 	void *data = (void *)(long)skb->data;
 	void *data_end = (void *)(long)skb->data_end;
-	
+	long long time = bpf_ktime_get_ns();
 	long long nb_bits = data_end - data;
-	long long *rec = bpf_map_lookup_elem(&my_config,&key);
+	long long *rec =bpf_map_lookup_elem(&my_config,&key);
+	
 
-    	if(!rec){
-    		bpf_printk("fuck \n");
-        	return 1;
-    	}
+    if(!rec){
+		bpf_printk("merdouille\n");
+        return 1;
+    }
+    
+    __sync_fetch_and_add(rec,nb_bits);
+	/*int r = bpf_map_update_elem(&my_config,&key,rec,BPF_ANY);
+	if (r<0){
+		bpf_printk("mdr 3\n");
+		return 2;
+	}*/
+
+	key++;
+
+	
+	time = bpf_ktime_get_ns() - time;
+	int r = bpf_map_update_elem(&my_config,&key,&time,BPF_ANY);
+	if (r<0){
+		bpf_printk("mdr 4\n");
+		return 3;
+	}
+	
     	
-    	*rec = (*rec)+nb_bits;
-    	bpf_printk("miam %lld \n",*rec);
-    	
-    	
-    	return 0;
+    return 0;
     	
 }
 
