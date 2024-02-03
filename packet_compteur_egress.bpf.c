@@ -24,7 +24,7 @@ int tc_test(struct __sk_buff *skb) {
 	
 
     if(!rec){
-		bpf_printk("merdouille\n");
+		bpf_printk("Erreur : récupération des données dans la map impossible\n");
         return 1;
     }
     
@@ -41,7 +41,7 @@ int tc_test(struct __sk_buff *skb) {
 	time = bpf_ktime_get_ns() - time;
 	int r = bpf_map_update_elem(&my_config,&key,&time,BPF_ANY);
 	if (r<0){
-		bpf_printk("mdr 4\n");
+		bpf_printk("Erreur : update de la map impossible \n");
 		return 3;
 	}
 	
