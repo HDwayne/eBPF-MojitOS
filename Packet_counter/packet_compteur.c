@@ -16,7 +16,7 @@
 static void signaltrap(int sig){
     printf("\nArrêt du programme\n");
     exit(0);
-    
+
 }
 
 int nb_interface (struct ifaddrs *i){
@@ -59,12 +59,12 @@ int main(int argc, char const *argv[])
        
     }else{
         printf("le flow doit être 'ingress' ou 'egress' \n" );
-        return -4;
+        return -3;
     }
 
 
     struct ifaddrs *list_interface;
-    if (getifaddrs(&list_interface) < 0) { printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return -15;}
+    if (getifaddrs(&list_interface) < 0) { printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return -14;}
     int nb_itf = nb_interface(list_interface);
 
 
@@ -74,24 +74,25 @@ int main(int argc, char const *argv[])
 
     if(!skel){
         printf("Impossible de charger le programme\n");
-        return -3;
+        goto cleanup;
     }
 
 
     if (bpf_map__set_max_entries(skel->maps.my_octets,nb_itf) <0 || bpf_map__set_max_entries(skel->maps.timeexec,nb_itf) <0){
         printf("miammmm\n");
-        return -10;
+        goto cleanup;
     }
 
 
     if( packet_compteur_egress_bpf__load(skel) < 0){
-        printf("ta mère \n"); return 2;
+        printf("ta mère \n"); 
+        goto cleanup;
     }
 
     int fd = bpf_program__fd(skel->progs.tc_test);
     if (!fd){
         printf("aïe !!!\n");
-        return -100;
+        goto cleanup;
     }
 
     struct ifaddrs *itf;int r;
@@ -109,10 +110,8 @@ int main(int argc, char const *argv[])
         if (r < 0)
 	    { 
             bpf_tc_hook_destroy(&hook);
-            freeifaddrs(list_interface);
-	        packet_compteur_egress_bpf__destroy(skel);
-            printf("Error while attaching program to the hook \n");
-            return 3;
+            goto cleanup;
+          
         }
         c++;
     }
@@ -139,16 +138,13 @@ int main(int argc, char const *argv[])
         sleep(freq);
     }
 
-
-
-
-/*TODO*/
-
-cleanup:
+cleanup :
 	
 
+    //packet_compteur_egress_bpf__unload(skel);
+    //packet_compteur_egress_bpf__close();
     freeifaddrs(list_interface);
     packet_compteur_egress_bpf__destroy(skel);
-
+    signaltrap(0);
     return 0;
 }

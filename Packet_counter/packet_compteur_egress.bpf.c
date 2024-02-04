@@ -47,9 +47,6 @@ int tc_test(struct __sk_buff *skb) {
 		bpf_printk("Erreur : update de la map impossible \n");
 		return 3;
 	}
-
-
-	bpf_printk("itf : %d value : %d time: %d\n",skb->ifindex,*rec,time);
 	
     	
     return 0;
