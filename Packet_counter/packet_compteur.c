@@ -23,7 +23,11 @@ int nb_interface (struct ifaddrs *i){
 
     int nb = 0;
    
-    for(;i!=NULL;i = i->ifa_next){
+    for(struct ifaddrs *t = i;t!=NULL;t = t->ifa_next){
+
+        if(if_nametoindex(t->ifa_name)<= nb){
+            return nb;
+        }
         nb++;
     }
     return nb;
@@ -74,14 +78,7 @@ int main(int argc, char const *argv[])
     }
 
 
-    if (bpf_map__set_max_entries(skel->maps.my_octets,nb_itf) <0 ){
-        printf("miammmm\n");
-        return -10;
-    }
-
-    
-
-    if(bpf_map__set_max_entries(skel->maps.timeexec,nb_itf) <0){
+    if (bpf_map__set_max_entries(skel->maps.my_octets,nb_itf) <0 || bpf_map__set_max_entries(skel->maps.timeexec,nb_itf) <0){
         printf("miammmm\n");
         return -10;
     }
@@ -97,14 +94,11 @@ int main(int argc, char const *argv[])
         return -100;
     }
 
-
-    printf("%d\n",bpf_map__max_entries(skel->maps.my_octets));
     struct ifaddrs *itf;int r;
 
-
-    for( itf = list_interface; itf!=NULL; itf = itf->ifa_next){
-        int index = if_nametoindex(itf->ifa_name);
-        printf("%s %d\n",itf->ifa_name,index);
+    int c=0,index;
+    for( itf = list_interface; c<nb_itf; itf = itf->ifa_next){
+        index = if_nametoindex(itf->ifa_name);
 
         LIBBPF_OPTS(bpf_tc_hook, hook, .ifindex = index, .attach_point = flow);
 
@@ -117,8 +111,10 @@ int main(int argc, char const *argv[])
             bpf_tc_hook_destroy(&hook);
             freeifaddrs(list_interface);
 	        packet_compteur_egress_bpf__destroy(skel);
-            printf("Error while attaching program to the hook \n");return 3;
+            printf("Error while attaching program to the hook \n");
+            return 3;
         }
+        c++;
     }
 
 
@@ -130,7 +126,7 @@ int main(int argc, char const *argv[])
     while(true){
         
         cur_key = 0;
-        for( itf = list_interface; itf!=NULL; itf = itf->ifa_next){
+        for( itf = list_interface; cur_key<nb_itf; itf = itf->ifa_next){
         
 
             if( bpf_map__lookup_elem(skel->maps.my_octets,&cur_key,sizeof(int),&value,sizeof(long long),BPF_ANY) < 0 ){ printf("Erreur lors de la lecture de la map\n");return 6;};
@@ -143,8 +139,15 @@ int main(int argc, char const *argv[])
         sleep(freq);
     }
 
+
+
+
+/*TODO*/
+
 cleanup:
 	
+
+    freeifaddrs(list_interface);
     packet_compteur_egress_bpf__destroy(skel);
 
     return 0;
