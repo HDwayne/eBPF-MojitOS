@@ -36,6 +36,9 @@ void destroy_tab_hook_tc (m_hook *tab_hook,int nb_itf){
         opts.prog_fd = opts.prog_id = 0;
         bpf_tc_detach(&(tab_hook[i].ingress),&opts);
         bpf_tc_detach(&(tab_hook[i].egress),&opts);
+        bpf_tc_hook_destroy(&(tab_hook[i].ingress));
+        bpf_tc_hook_destroy(&(tab_hook[i].egress));
+
        
     }
    
