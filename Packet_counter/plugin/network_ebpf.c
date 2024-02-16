@@ -90,6 +90,20 @@ int create_hook_tc(monitoring_hook *tab_hook,int i,int flow,int index,int fd){
 
 }
 
+int nb_interface (struct ifaddrs *i){
+
+    int nb = 0;
+   
+    for(struct ifaddrs *t = i;t!=NULL && nb < NB_MAX_DEV;t = t->ifa_next){
+
+        if(if_nametoindex(t->ifa_name)<= nb){
+            return nb;
+        }
+        nb++;
+    }
+    return nb;
+}
+
 
 unsigned int init_network(char *dev, void **ptr)
 {
@@ -113,18 +127,23 @@ unsigned int init_network(char *dev, void **ptr)
 
         struct ifaddrs *list_interface;
         if (getifaddrs(&list_interface) < 0) { printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return -14;}
-        state->ndev = 0;
+        state->ndev = nb_interface(list_interface);
 
+        printf("%d\n",state->ndev);
 
-        /*for( int i=if_nametoindex(list_interface->ifa_name), struct ifaddrs *itf = list_interface ;state->ndev < i || state->ndev<NB_MAX_DEV ;itf = itf->ifa_next,state->ndev +=1){
+        
+        int i=0;
+        for(struct ifaddrs *itf = list_interface  ; i < state->ndev ; itf = itf->ifa_next,i++){
 
-            memcpy(&(state->devs[state->ndev]), itf->ifa_name, strlen(itf->ifa_name) + 1);
+            memcpy(&(state->devs[i]), itf->ifa_name, strlen(itf->ifa_name) + 1);
 
             for(int j=0;j<NB_SENSOR;j++){
-                snprintf(state->labels[state->ndev][j], sizeof(state->labels[state->ndev][j]), _labels_network[j], state->devs[state->ndev]);
+                snprintf(state->labels[i][j], sizeof(state->labels[i][j]), _labels_network[j], state->devs[i]);
             }
-            i = if_nametoindex(itf->ifa_name);
-        }*/
+        }
+
+        printf("%d\n",state->ndev);
+
     
 
         if (bpf_map__set_max_entries(state->skel->maps.my_data,state->ndev) <0){
@@ -217,6 +236,7 @@ unsigned int get_network(uint64_t *results, void *ptr)
 
 
         if (bpf_map__lookup_elem(state->skel->maps.my_data,&i,sizeof(int),&res,sizeof(cpt_pckt),BPF_ANY) <0 ){
+            printf("merde\n");
             return state->ndev * NB_SENSOR;
         }
 
@@ -253,7 +273,6 @@ int main(int argc, char *argv[])
     uint64_t tab_res[nb];char **labels = (char **)malloc(nb*sizeof(char*));
 
     label_network(labels,ptr);
-    printf("labels := %s\n",labels[0]);
 
     for(int i=0;i<nb;i++){
        printf("%s ",labels[i]);
