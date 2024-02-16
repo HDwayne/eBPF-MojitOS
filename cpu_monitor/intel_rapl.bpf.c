@@ -5,14 +5,12 @@
 
 
 
-SEC("tracepoint/thermal/thermal_temperature")
-int tp_test(struct trace_event_raw_thermal_temperature *ctx) {
+SEC("tracepoint/thermal/thermal_zone_trip")
+int tp_test(struct trace_event_raw_thermal_zone_trip *ctx) {
 
-    bpf_printk("%d\n",ctx->temp);
+    bpf_printk("%d\n",ctx->trip);
     return 0;
     	
 }
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
-    	
-	

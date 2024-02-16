@@ -5,6 +5,9 @@
 
 
 
+
+
+
 struct {
 	__uint(type,BPF_MAP_TYPE_ARRAY);
 	__type(key,int);
@@ -19,8 +22,6 @@ struct {
 	__type(value,long long);
 	__uint(max_entries,1);
 } timeexec SEC(".maps");
-
-
 
 
 SEC("tc")
