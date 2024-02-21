@@ -303,7 +303,7 @@ static void signaltrap(int sig){
 
 int main(int argc, char *argv[])
 {
-    //libbpf_set_print(NULL);
+    libbpf_set_print(NULL);
     signal(SIGINT,signaltrap);
     void *ptr = NULL;
 
