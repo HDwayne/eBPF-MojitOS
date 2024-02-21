@@ -19,6 +19,9 @@
  *******************************************************/
 
 
+#define ERROR_LOAD_PROG 1
+#define ERROR_OPEN_PROG 2
+#define ERROR_CREATE_HOOK 3
 
 
 unsigned int init_network(char *, void **);
@@ -28,7 +31,7 @@ void label_network(char **labels, void *);
 
 
 struct compteur_pckt {
-	uint64_t data[6];
+	uint64_t data[3];
     
 };
 
