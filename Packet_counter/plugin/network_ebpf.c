@@ -130,13 +130,12 @@ unsigned int init_network(char *dev, void **ptr)
         return -44;
     }
 
+
     if(strcmp(dev,"X")==0){
 
         struct ifaddrs *list_interface;
         if (getifaddrs(&list_interface) < 0) { printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return -14;}
         state->ndev = nb_interface(list_interface);
-
-        printf("%d\n",state->ndev);
 
         
         int i=0;
@@ -148,14 +147,10 @@ unsigned int init_network(char *dev, void **ptr)
                 snprintf(state->labels[i][j], sizeof(state->labels[i][j]), _labels_network[j], state->devs[i]);
             }
         }
-
-        printf("%d\n",state->ndev);
-
-    
+        
 
         if (bpf_map__set_max_entries(state->skel_ingress->maps.my_data_ingress,state->ndev) <0 || bpf_map__set_max_entries(state->skel_egress->maps.my_data_egress,state->ndev) <0 ){
             printf("impossible de modifier le nombre d'éléments des maps \n");
-            free(list_interface);
             network_ebpf_ingress_bpf__destroy(state->skel_ingress);
             network_ebpf_egress_bpf__destroy(state->skel_egress);
             return 78;
@@ -171,8 +166,10 @@ unsigned int init_network(char *dev, void **ptr)
         for(int i=0;i<NB_SENSOR;i++){
             snprintf(state->labels[0][i], sizeof(state->labels[0][i]), _labels_network[i], state->devs[0]);
         }
-
+      
     }
+
+
 
 
     if( network_ebpf_ingress_bpf__load(state->skel_ingress) < 0 || network_ebpf_egress_bpf__load(state->skel_egress) < 0){
@@ -204,6 +201,16 @@ unsigned int init_network(char *dev, void **ptr)
         }
 
     }
+
+    if(state->ndev==1){
+        int key=0;
+        if (bpf_map__update_elem(state->skel_ingress->maps.is_multi_itf_ingress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 || bpf_map__update_elem(state->skel_egress->maps.is_multi_itf_egress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 ){
+            printf("mdr\n");
+            return -78;
+        }
+    }
+
+
 
 
     *ptr = (void *) state;
