@@ -56,10 +56,17 @@ struct monitoring_hook{
 
 typedef struct monitoring_hook monitoring_hook;
 
-struct Network {
-    uint64_t values[NB_MAX_DEV][NB_SENSOR];
+struct skel{
     struct network_ebpf_ingress_bpf *skel_ingress;
     struct network_ebpf_egress_bpf *skel_egress;
+};
+
+typedef struct skel network_skel;
+
+struct Network {
+    uint64_t values[NB_MAX_DEV][NB_SENSOR];
+    uint64_t tmp_values[NB_MAX_DEV][NB_SENSOR];
+    network_skel *skel;
     monitoring_hook tab_hook[NB_MAX_DEV];
     char labels[NB_MAX_DEV][NB_SENSOR][128];
     char devs[NB_MAX_DEV][128];
@@ -124,11 +131,12 @@ unsigned int init_network(char *dev, void **ptr)
 
     struct Network *state = malloc(sizeof(struct Network));
     memset(state, '\0', sizeof(*state));
+    state->skel = malloc(sizeof(network_skel));
 
-    state->skel_ingress = network_ebpf_ingress_bpf__open();
-    state->skel_egress = network_ebpf_egress_bpf__open();
+    state->skel->skel_ingress = network_ebpf_ingress_bpf__open();
+    state->skel->skel_egress = network_ebpf_egress_bpf__open();
 
-    if(!(state->skel_ingress && state->skel_egress)){
+    if(!(state->skel->skel_ingress && state->skel->skel_egress)){
         printf("Impossible d'ouvrir le programme\n");
         return ERROR_OPEN_PROG;
     }
@@ -137,7 +145,9 @@ unsigned int init_network(char *dev, void **ptr)
     if(strcmp(dev,"X")==0){
 
         struct ifaddrs *list_interface;
-        if (getifaddrs(&list_interface) < 0) { printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return ERROR_GET_ITF;}
+        if (getifaddrs(&list_interface) < 0) { 
+            printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return ERROR_GET_ITF;
+        }
         state->ndev = nb_interface(list_interface);
 
         
@@ -151,15 +161,6 @@ unsigned int init_network(char *dev, void **ptr)
             }
         }
         
-
-        //il n'est pas forcément nécessaire de redimmensionner la map en fonction du nombre d'interfaces, il suffit simplement d'utiliser le nombre max d'itf NB_MAX_DEV possible comme taille--> meilleur temps d'exec du prog
-
-        /*if (bpf_map__set_max_entries(state->skel_ingress->maps.my_data_ingress,state->ndev) <0 || bpf_map__set_max_entries(state->skel_egress->maps.my_data_egress,state->ndev) <0 ){
-            printf("impossible de modifier le nombre d'éléments des maps \n");
-            network_ebpf_ingress_bpf__destroy(state->skel_ingress);
-            network_ebpf_egress_bpf__destroy(state->skel_egress);
-            return ERROR_MODIFY_MAP;
-        }*/
 
         free(list_interface);
 
@@ -177,22 +178,18 @@ unsigned int init_network(char *dev, void **ptr)
 
 
 
-    if( network_ebpf_ingress_bpf__load(state->skel_ingress) < 0 || network_ebpf_egress_bpf__load(state->skel_egress) < 0){
+    if( network_ebpf_ingress_bpf__load(state->skel->skel_ingress) < 0 || network_ebpf_egress_bpf__load(state->skel->skel_egress) < 0){
         printf("impossible de charger le programme dans le kernel\n"); 
-        network_ebpf_ingress_bpf__destroy(state->skel_ingress);
-        network_ebpf_egress_bpf__destroy(state->skel_egress);
+        state->ndev=0;
         return ERROR_LOAD_PROG;
         
     }
 
-    int fd_ingress = bpf_program__fd(state->skel_ingress->progs.tc_test_ingress);
-    int fd_egress = bpf_program__fd(state->skel_egress->progs.tc_test_egress);
+    int fd_ingress = bpf_program__fd(state->skel->skel_ingress->progs.tc_test_ingress);
+    int fd_egress = bpf_program__fd(state->skel->skel_egress->progs.tc_test_egress);
     if (!(fd_ingress && fd_egress) ){
         printf("impossible de récupérer l'id du programme\n");
-        network_ebpf_ingress_bpf__detach(state->skel_ingress);
-        network_ebpf_egress_bpf__detach(state->skel_egress);
-        network_ebpf_ingress_bpf__destroy(state->skel_ingress);
-        network_ebpf_egress_bpf__destroy(state->skel_egress);
+        state->ndev=0;
         return ERROR_GET_ID;
         
     }
@@ -203,6 +200,7 @@ unsigned int init_network(char *dev, void **ptr)
         index = if_nametoindex(state->devs[i]);
         if (create_hook_tc(state->tab_hook,i,BPF_TC_INGRESS,index,fd_ingress) <0 || create_hook_tc(state->tab_hook,i,BPF_TC_EGRESS,index,fd_egress) <0 ){
             printf("Erreur lors de la création de un ou plusieurs hooks\n");
+            state->ndev=i;
             return ERROR_CREATE_HOOK;
         }
 
@@ -210,7 +208,7 @@ unsigned int init_network(char *dev, void **ptr)
 
     if(state->ndev==1){
         int key=0;
-        if (bpf_map__update_elem(state->skel_ingress->maps.is_multi_itf_ingress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 || bpf_map__update_elem(state->skel_egress->maps.is_multi_itf_egress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 ){
+        if (bpf_map__update_elem(state->skel->skel_ingress->maps.is_multi_itf_ingress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 || bpf_map__update_elem(state->skel->skel_egress->maps.is_multi_itf_egress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 ){
             printf("Erreur : impossible d'écrire dans une map\n");
             return ERROR_UPDATE_ELEM;
         }
@@ -248,12 +246,12 @@ void clean_network(void *ptr)
 
        
     }
-    network_ebpf_ingress_bpf__detach(state->skel_ingress);
-    network_ebpf_egress_bpf__detach(state->skel_egress);
-    network_ebpf_ingress_bpf__destroy(state->skel_ingress);
-    network_ebpf_egress_bpf__destroy(state->skel_egress);
+    network_ebpf_ingress_bpf__detach(state->skel->skel_ingress);
+    network_ebpf_egress_bpf__detach(state->skel->skel_egress);
+    network_ebpf_ingress_bpf__destroy(state->skel->skel_ingress);
+    network_ebpf_egress_bpf__destroy(state->skel->skel_egress);
 
-
+    free(state->skel);
     free(state);
 
 }
@@ -270,7 +268,7 @@ unsigned int get_network(uint64_t *results, void *ptr)
     for (int i = 0; i < state->ndev; i++) {
 
 
-        if (bpf_map__lookup_elem(state->skel_ingress->maps.my_data_ingress,&i,sizeof(int),&res_ingress,sizeof(cpt_pckt),BPF_ANY) <0 || bpf_map__lookup_elem(state->skel_egress->maps.my_data_egress,&i,sizeof(int),&res_egress,sizeof(cpt_pckt),BPF_ANY) <0 ){
+        if (bpf_map__lookup_elem(state->skel->skel_ingress->maps.my_data_ingress,&i,sizeof(int),&res_ingress,sizeof(cpt_pckt),BPF_ANY) <0 || bpf_map__lookup_elem(state->skel->skel_egress->maps.my_data_egress,&i,sizeof(int),&res_egress,sizeof(cpt_pckt),BPF_ANY) <0 ){
             printf("Erreur : impossible de lire les informations contenus dans les maps \n");
             return ERROR_ACCESS_ELEM;
         }
