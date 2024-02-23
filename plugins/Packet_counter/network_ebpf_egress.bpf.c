@@ -49,8 +49,6 @@ int tc_test_egress(struct __sk_buff *skb) {
     }
 
 
-
-	bpf_printk("mdr %ld\n",nb_octets);
 	__sync_fetch_and_add(&(rec->data[0]),1);
 	__sync_fetch_and_add(&(rec->data[1]),nb_octets);
 	rec->data[2] = bpf_ktime_get_ns() - time;
