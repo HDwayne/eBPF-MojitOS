@@ -19,9 +19,15 @@
  *******************************************************/
 
 
-#define ERROR_LOAD_PROG 1
-#define ERROR_OPEN_PROG 2
-#define ERROR_CREATE_HOOK 3
+#define ERROR_LOAD_PROG -1
+#define ERROR_OPEN_PROG -2
+#define ERROR_CREATE_HOOK -3
+#define ERROR_GET_ITF -4
+#define ERROR_MODIFY_MAP -5
+#define ERROR_GET_ID -6
+#define ERROR_UPDATE_ELEM -7
+#define ERROR_ACCESS_ELEM -8
+
 
 
 unsigned int init_network(char *, void **);

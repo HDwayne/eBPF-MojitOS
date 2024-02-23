@@ -127,14 +127,14 @@ unsigned int init_network(char *dev, void **ptr)
 
     if(!(state->skel_ingress && state->skel_egress)){
         printf("Impossible d'ouvrir le programme\n");
-        return -44;
+        return ERROR_OPEN_PROG;
     }
 
 
     if(strcmp(dev,"X")==0){
 
         struct ifaddrs *list_interface;
-        if (getifaddrs(&list_interface) < 0) { printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return -14;}
+        if (getifaddrs(&list_interface) < 0) { printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return ERROR_GET_ITF;}
         state->ndev = nb_interface(list_interface);
 
         
@@ -153,7 +153,7 @@ unsigned int init_network(char *dev, void **ptr)
             printf("impossible de modifier le nombre d'éléments des maps \n");
             network_ebpf_ingress_bpf__destroy(state->skel_ingress);
             network_ebpf_egress_bpf__destroy(state->skel_egress);
-            return 78;
+            return ERROR_MODIFY_MAP;
         }
 
         free(list_interface);
@@ -176,7 +176,7 @@ unsigned int init_network(char *dev, void **ptr)
         printf("impossible de charger le programme dans le kernel\n"); 
         network_ebpf_ingress_bpf__destroy(state->skel_ingress);
         network_ebpf_egress_bpf__destroy(state->skel_egress);
-        return 7;
+        return ERROR_LOAD_PROG;
         
     }
 
@@ -188,7 +188,7 @@ unsigned int init_network(char *dev, void **ptr)
         network_ebpf_egress_bpf__detach(state->skel_egress);
         network_ebpf_ingress_bpf__destroy(state->skel_ingress);
         network_ebpf_egress_bpf__destroy(state->skel_egress);
-        return -2;
+        return ERROR_GET_ID;
         
     }
 
@@ -197,7 +197,8 @@ unsigned int init_network(char *dev, void **ptr)
     for(int i=0; i<state->ndev; i++){
         index = if_nametoindex(state->devs[i]);
         if (create_hook_tc(state->tab_hook,i,BPF_TC_INGRESS,index,fd_ingress) <0 || create_hook_tc(state->tab_hook,i,BPF_TC_EGRESS,index,fd_egress) <0 ){
-            return -1;
+            printf("Erreur lors de la création de un ou plusieurs hooks\n");
+            return ERROR_CREATE_HOOK;
         }
 
     }
@@ -205,8 +206,8 @@ unsigned int init_network(char *dev, void **ptr)
     if(state->ndev==1){
         int key=0;
         if (bpf_map__update_elem(state->skel_ingress->maps.is_multi_itf_ingress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 || bpf_map__update_elem(state->skel_egress->maps.is_multi_itf_egress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 ){
-            printf("mdr\n");
-            return -78;
+            printf("Erreur : impossible d'écrire dans une map\n");
+            return ERROR_UPDATE_ELEM;
         }
     }
 
@@ -231,7 +232,6 @@ void clean_network(void *ptr)
         return;
    }
 
-  printf("%d\n",state->ndev);
   for(int i=0; i<state->ndev;i++ ){
 
         LIBBPF_OPTS(bpf_tc_opts, opts);
@@ -266,8 +266,8 @@ unsigned int get_network(uint64_t *results, void *ptr)
 
 
         if (bpf_map__lookup_elem(state->skel_ingress->maps.my_data_ingress,&i,sizeof(int),&res_ingress,sizeof(cpt_pckt),BPF_ANY) <0 || bpf_map__lookup_elem(state->skel_egress->maps.my_data_egress,&i,sizeof(int),&res_egress,sizeof(cpt_pckt),BPF_ANY) <0 ){
-            printf("merde\n");
-            return state->ndev * NB_SENSOR;
+            printf("Erreur : impossible de lire les informations contenus dans les maps \n");
+            return ERROR_ACCESS_ELEM;
         }
 
         
@@ -314,7 +314,10 @@ int main(int argc, char *argv[])
     signal(SIGINT,signaltrap);
     void *ptr = NULL;
 
-    int nb=init_network(argv[1],&ptr);
+    int nb;
+    if( (nb=init_network(argv[1],&ptr))<0){
+        return 1;
+    }
 
     uint64_t tab_res[nb];char **labels = (char **)malloc(nb*sizeof(char*));
 
@@ -333,7 +336,9 @@ int main(int argc, char *argv[])
             clean_network(ptr);
             exit(0);
         }
-        get_network(tab_res,ptr);
+        if(get_network(tab_res,ptr)<0){
+            return 2;
+        }
         for(int i=0;i<nb;i++){
             printf("%ld ",tab_res[i]);
         }
