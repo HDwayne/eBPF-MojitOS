@@ -1,4 +1,4 @@
-#include "../vmlinux.h"
+#include "../build/vmlinux.h"
 #include <bpf/bpf_helpers.h>
 
 struct
