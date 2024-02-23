@@ -73,7 +73,10 @@ typedef struct Network Network;
 int create_hook_tc(monitoring_hook *tab_hook,int i,int flow,int index,int fd){
     LIBBPF_OPTS(bpf_tc_hook, hook, .ifindex = index, .attach_point = flow );
 
+    libbpf_set_print(NULL);
+    
     int r = bpf_tc_hook_create(&hook);
+    
 
     LIBBPF_OPTS(bpf_tc_opts, opts, .prog_fd = fd);
         
@@ -312,7 +315,6 @@ static void signaltrap(int sig){
 
 int main(int argc, char *argv[])
 {
-    libbpf_set_print(NULL);
     signal(SIGINT,signaltrap);
     void *ptr = NULL;
 
