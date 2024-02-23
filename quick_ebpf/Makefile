@@ -4,7 +4,7 @@ CC = clang
 BPF_CLANG = clang
 BPF_CFLAGS = -g -O2 -c -target bpf
 BPF_LDFLAGS =
-BPF_SRC = $(wildcard blocks/*.bpf.c)
+BPF_SRC = $(wildcard ebpf_programs/*.bpf.c)
 BPF_OBJ = $(patsubst %.bpf.c,%.bpf.o,$(BPF_SRC))
 
 # Rule to compile BPF programs

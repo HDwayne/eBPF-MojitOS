@@ -50,7 +50,7 @@ int main(int argc, char **argv)
   }
 
   // TODO: change the name of the eBPF program
-  if (ebpf_load_attach("blocks/disk_activity.bpf.o") != 0)
+  if (ebpf_load_attach("ebpf_programs/disk_activity.bpf.o") != 0)
   {
     fprintf(stderr, "Failed to load and attach eBPF program\n");
     ebpf_cleanup();

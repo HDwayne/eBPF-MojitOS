@@ -3,7 +3,7 @@
 ```
 quick_ebpf/
 │
-├── blocks/                 # Dossier contenant des exemples de blocs eBPF
+├── ebpf_programs/                 # Dossier contenant des exemples de blocs eBPF
 │   ├── cpu_usage.bpf.c     # Surveille les commutations de contexte par PID
 │   └── disk_activity.bpf.c # Surveille les écritures sur disque par PID
 │
@@ -19,7 +19,7 @@ quick_ebpf/
 
 # Description des Composants
 
-- blocks/ : Contient les programmes eBPF individuels. Chaque fichier .bpf.c représente un programme eBPF conçu pour une tâche de surveillance spécifique.
+- ebpf_programs/ : Contient les programmes eBPF individuels. Chaque fichier .bpf.c représente un programme eBPF conçu pour une tâche de surveillance spécifique.
 
 - lib/ : Fournit une bibliothèque générique pour faciliter le chargement et l'attachement des programmes eBPF, ainsi que la manipulation des maps eBPF depuis l'espace utilisateur.
 
