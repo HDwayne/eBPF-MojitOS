@@ -11,10 +11,10 @@ This repository contains various experiments and plugins related to eBPF technol
 │   ├── Packet_counter
 │   ├── XDP
 │   ├── cpu_monitor
-│   └── README
+│   └── ...
 ├── plugins                    # Directory for eBPF plugins
 │   ├── Packet_counter
-│   └── README
+│   └── ...
 ├── quick_ebpf                 # Directory for quick eBPF experiments
 └── setup.sh                   # Setup script
 ```
@@ -31,4 +31,4 @@ This repository contains various experiments and plugins related to eBPF technol
 
 ## Usage
 
-For detailed usage, please refer to the **online documentation**.
+For detailed usage, please refer to the **[online documentation](https://ebpf-mojitos.github.io/eBPF-Docs/)**.
