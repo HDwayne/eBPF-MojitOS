@@ -9,7 +9,7 @@ struct {
 	__uint(type,BPF_MAP_TYPE_ARRAY);
 	__type(key,int);
 	__type(value,cpt_pckt);
-	__uint(max_entries,1);
+	__uint(max_entries,8);
 } my_data_ingress SEC(".maps");
 
 struct {
@@ -47,7 +47,6 @@ int tc_test_ingress(struct __sk_buff *skb) {
         return 1;
     }
 
-    bpf_printk("mdr %ld\n",nb_octets);
 	__sync_fetch_and_add(&(rec->data[0]),1);
 	__sync_fetch_and_add(&(rec->data[1]),nb_octets);
 	rec->data[2] = bpf_ktime_get_ns() - time;
