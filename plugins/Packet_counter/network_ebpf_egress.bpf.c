@@ -9,7 +9,7 @@ struct {
 	__uint(type,BPF_MAP_TYPE_ARRAY);
 	__type(key,int);
 	__type(value,cpt_pckt);
-	__uint(max_entries,1);
+	__uint(max_entries,8);
 } my_data_egress SEC(".maps");
 
 

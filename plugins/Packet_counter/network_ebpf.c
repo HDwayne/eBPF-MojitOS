@@ -149,12 +149,14 @@ unsigned int init_network(char *dev, void **ptr)
         }
         
 
-        if (bpf_map__set_max_entries(state->skel_ingress->maps.my_data_ingress,state->ndev) <0 || bpf_map__set_max_entries(state->skel_egress->maps.my_data_egress,state->ndev) <0 ){
+        //il n'est pas forcément nécessaire de redimmensionner la map en fonction du nombre d'interfaces, il suffit simplement d'utiliser le nombre max d'itf NB_MAX_DEV possible comme taille--> meilleur temps d'exec du prog
+
+        /*if (bpf_map__set_max_entries(state->skel_ingress->maps.my_data_ingress,state->ndev) <0 || bpf_map__set_max_entries(state->skel_egress->maps.my_data_egress,state->ndev) <0 ){
             printf("impossible de modifier le nombre d'éléments des maps \n");
             network_ebpf_ingress_bpf__destroy(state->skel_ingress);
             network_ebpf_egress_bpf__destroy(state->skel_egress);
             return ERROR_MODIFY_MAP;
-        }
+        }*/
 
         free(list_interface);
 
