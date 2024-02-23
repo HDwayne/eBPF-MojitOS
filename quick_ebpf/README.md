@@ -1,35 +1,25 @@
-# Structure du Projet
+## Project Structure
+
+The project is organized as follows:
 
 ```
-quick_ebpf/
-│
-├── blocks/                 # Dossier contenant des exemples de blocs eBPF
-│   ├── cpu_usage.bpf.c     # Surveille les commutations de contexte par PID
-│   └── disk_activity.bpf.c # Surveille les écritures sur disque par PID
-│
-├── lib/                    # Bibliothèque eBPF générique
-│   ├── ebpf_lib.h          # En-têtes pour la bibliothèque générique eBPF
-│   └── ebpf_lib.c          # Implémentation de la bibliothèque générique eBPF
-│
-├── Makefile                # Makefile pour compiler le projet
-│
-└── main.c                  # Programme principal en C
-
+project-root/
+├── Makefile
+├── ebpf_programs/
+│   ├── cpu_usage.bpf.c
+│   ├── disk_activity.bpf.c
+│   └── ...
+└── main.c
 ```
 
-# Description des Composants
+- **Makefile**: Contains commands to build and clean the project, including compiling eBPF programs and the main application.
+- **ebpf_programs/**: Directory containing eBPF program sources. Each `.bpf.c` file represents a specific monitoring aspect.
+- **main.c**: The main C application that loads and attaches eBPF programs using the libbpf library.
 
-- blocks/ : Contient les programmes eBPF individuels. Chaque fichier .bpf.c représente un programme eBPF conçu pour une tâche de surveillance spécifique.
+## Requirements
 
-- lib/ : Fournit une bibliothèque générique pour faciliter le chargement et l'attachement des programmes eBPF, ainsi que la manipulation des maps eBPF depuis l'espace utilisateur.
-
-- Makefile : Permet de compiler facilement le projet, y compris les programmes eBPF et le programme utilisateur.
-
-- main.c : Le programme utilisateur qui initialise l'environnement eBPF, charge et attache les programmes eBPF, et effectue la surveillance basée sur les données collectées par les programmes eBPF.
-
-
-# Configuration Requise
-
-- Fichiers Blocs eBPF : Modifiez le chemin du fichier dans main.c pour pointer vers le bon fichier .bpf.o compilé correspondant à votre bloc eBPF.
-
-- Maps eBPF : Assurez-vous que le nom de la map utilisée dans main.c correspond exactement au nom de la map définie dans votre programme eBPF.
+- **Linux Kernel**: A recent Linux kernel version with BPF support (5.x or newer recommended).
+- **libbpf**: Userspace library for working with eBPF programs.
+- **bpftool**: A tool for inspection and manipulation of eBPF programs and maps.
+- **clang**: Compiler for building eBPF programs.
+- **LLVM**: Provides the backend for `clang` to compile eBPF bytecode.
