@@ -70,6 +70,7 @@ struct Network {
     monitoring_hook tab_hook[NB_MAX_DEV];
     char labels[NB_MAX_DEV][NB_SENSOR][128];
     char devs[NB_MAX_DEV][128];
+    int error;
     int ndev;
 };
 
@@ -83,6 +84,7 @@ int create_hook_tc(monitoring_hook *tab_hook,int i,int flow,int index,int fd){
     libbpf_set_print(NULL);
     
     int r = bpf_tc_hook_create(&hook);
+   
     
 
     LIBBPF_OPTS(bpf_tc_opts, opts, .prog_fd = fd);
@@ -120,7 +122,7 @@ int nb_interface (struct ifaddrs *i){
     return nb;
 }
 
-/* initialiser les interfaces et les hooks */
+/* initialise les interfaces et les hooks */
 unsigned int init_network(char *dev, void **ptr)
 {
 
@@ -138,6 +140,7 @@ unsigned int init_network(char *dev, void **ptr)
 
     if(!(state->skel->skel_ingress && state->skel->skel_egress)){
         printf("Impossible d'ouvrir le programme\n");
+        state->error = ERROR_OPEN_PROG;
         return ERROR_OPEN_PROG;
     }
 
@@ -146,7 +149,7 @@ unsigned int init_network(char *dev, void **ptr)
 
         struct ifaddrs *list_interface;
         if (getifaddrs(&list_interface) < 0) { 
-            printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");return ERROR_GET_ITF;
+            printf(" Erreur: impossible de récupérer la liste des interfaces réseau du système\n");state->error = ERROR_GET_ITF; ERROR_GET_ITF;
         }
         state->ndev = nb_interface(list_interface);
 
@@ -180,7 +183,7 @@ unsigned int init_network(char *dev, void **ptr)
 
     if( network_ebpf_ingress_bpf__load(state->skel->skel_ingress) < 0 || network_ebpf_egress_bpf__load(state->skel->skel_egress) < 0){
         printf("impossible de charger le programme dans le kernel\n"); 
-        state->ndev=0;
+        state->error = ERROR_LOAD_PROG;
         return ERROR_LOAD_PROG;
         
     }
@@ -189,7 +192,7 @@ unsigned int init_network(char *dev, void **ptr)
     int fd_egress = bpf_program__fd(state->skel->skel_egress->progs.tc_test_egress);
     if (!(fd_ingress && fd_egress) ){
         printf("impossible de récupérer l'id du programme\n");
-        state->ndev=0;
+        state->error = ERROR_GET_ID;
         return ERROR_GET_ID;
         
     }
@@ -200,6 +203,7 @@ unsigned int init_network(char *dev, void **ptr)
         index = if_nametoindex(state->devs[i]);
         if (create_hook_tc(state->tab_hook,i,BPF_TC_INGRESS,index,fd_ingress) <0 || create_hook_tc(state->tab_hook,i,BPF_TC_EGRESS,index,fd_egress) <0 ){
             printf("Erreur lors de la création de un ou plusieurs hooks\n");
+            state->error = ERROR_CREATE_HOOK;
             state->ndev=i;
             return ERROR_CREATE_HOOK;
         }
@@ -210,6 +214,7 @@ unsigned int init_network(char *dev, void **ptr)
         int key=0;
         if (bpf_map__update_elem(state->skel->skel_ingress->maps.is_multi_itf_ingress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 || bpf_map__update_elem(state->skel->skel_egress->maps.is_multi_itf_egress,&key,sizeof(int),&(state->ndev),sizeof(int),BPF_ANY) <0 ){
             printf("Erreur : impossible d'écrire dans une map\n");
+            state->error = ERROR_UPDATE_ELEM;
             return ERROR_UPDATE_ELEM;
         }
     }
@@ -235,24 +240,33 @@ void clean_network(void *ptr)
         return;
    }
 
-  for(int i=0; i<state->ndev;i++ ){
 
-        LIBBPF_OPTS(bpf_tc_opts, opts);
-        opts.prog_fd = opts.prog_id = 0;
-        bpf_tc_detach(&(state->tab_hook[i].ingress),&opts);
-        bpf_tc_detach(&(state->tab_hook[i].egress),&opts);
-        bpf_tc_hook_destroy(&(state->tab_hook[i].ingress));
-        bpf_tc_hook_destroy(&(state->tab_hook[i].egress));
+  if ( state ->error < -1 ){
 
-       
+    if ( state->error < -3 ){
+
+        if( state->error < -4 ){
+            for(int i=0; i<state->ndev;i++ ){
+
+             LIBBPF_OPTS(bpf_tc_opts, opts);
+                opts.prog_fd = opts.prog_id = 0;
+                bpf_tc_detach(&(state->tab_hook[i].ingress),&opts);
+                bpf_tc_detach(&(state->tab_hook[i].egress),&opts);
+                bpf_tc_hook_destroy(&(state->tab_hook[i].ingress));
+                bpf_tc_hook_destroy(&(state->tab_hook[i].egress));
+            }
+        }
+
+        network_ebpf_ingress_bpf__detach(state->skel->skel_ingress);
+        network_ebpf_egress_bpf__detach(state->skel->skel_egress);
     }
-    network_ebpf_ingress_bpf__detach(state->skel->skel_ingress);
-    network_ebpf_egress_bpf__detach(state->skel->skel_egress);
+
     network_ebpf_ingress_bpf__destroy(state->skel->skel_ingress);
     network_ebpf_egress_bpf__destroy(state->skel->skel_egress);
+  }
 
-    free(state->skel);
-    free(state);
+   free(state->skel);
+   free(state);
 
 }
 
@@ -273,11 +287,21 @@ unsigned int get_network(uint64_t *results, void *ptr)
             return ERROR_ACCESS_ELEM;
         }
 
-        
 
         for (int j = 0; j < NB_SENSOR-3; j++) {
             results[i*NB_SENSOR + 2*j] = res_ingress.data[j];
             results[i*NB_SENSOR + 2*j + 1] = res_egress.data[j];
+
+            if (j<2){
+                results[i*NB_SENSOR + 2*j] -= state->tmp_values[i][2*j];
+                results[i*NB_SENSOR + 2*j + 1] -= state->tmp_values[i][2*j+1];
+
+                state->tmp_values[i][2*j] = res_ingress.data[j];
+                state->tmp_values[i][2*j + 1] = res_egress.data[j];
+            }
+           
+         
+
         }
 
 
