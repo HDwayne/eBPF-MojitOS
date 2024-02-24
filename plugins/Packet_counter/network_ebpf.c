@@ -241,14 +241,14 @@ void clean_network(void *ptr)
    }
 
 
-  if ( state ->error < -1 ){
+  if ( state ->error < -1 || state->error == 0 ){
 
-    if ( state->error < -3 ){
+    if ( state->error < -3 || state->error == 0 ){
 
-        if( state->error < -4 ){
+        if( state->error < -4 || state->error ==0 ){
             for(int i=0; i<state->ndev;i++ ){
 
-             LIBBPF_OPTS(bpf_tc_opts, opts);
+                LIBBPF_OPTS(bpf_tc_opts, opts);
                 opts.prog_fd = opts.prog_id = 0;
                 bpf_tc_detach(&(state->tab_hook[i].ingress),&opts);
                 bpf_tc_detach(&(state->tab_hook[i].egress),&opts);
@@ -289,18 +289,11 @@ unsigned int get_network(uint64_t *results, void *ptr)
 
 
         for (int j = 0; j < NB_SENSOR-3; j++) {
-            results[i*NB_SENSOR + 2*j] = res_ingress.data[j];
-            results[i*NB_SENSOR + 2*j + 1] = res_egress.data[j];
+            results[i*NB_SENSOR + 2*j] = res_ingress.data[j]-state->tmp_values[i][2*j];
+            results[i*NB_SENSOR + 2*j + 1] = res_egress.data[j]-state->tmp_values[i][2*j+1];
 
-            if (j<2){
-                results[i*NB_SENSOR + 2*j] -= state->tmp_values[i][2*j];
-                results[i*NB_SENSOR + 2*j + 1] -= state->tmp_values[i][2*j+1];
-
-                state->tmp_values[i][2*j] = res_ingress.data[j];
-                state->tmp_values[i][2*j + 1] = res_egress.data[j];
-            }
-           
-         
+            state->tmp_values[i][2*j] = res_ingress.data[j];
+            state->tmp_values[i][2*j + 1] = res_egress.data[j]; 
 
         }
 

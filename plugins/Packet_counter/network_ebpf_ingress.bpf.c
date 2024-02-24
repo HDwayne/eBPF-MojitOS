@@ -49,7 +49,7 @@ int tc_test_ingress(struct __sk_buff *skb) {
 
 	__sync_fetch_and_add(&(rec->data[0]),1);
 	__sync_fetch_and_add(&(rec->data[1]),nb_octets);
-	rec->data[2] = bpf_ktime_get_ns() - time;
+	__sync_fetch_and_add(&(rec->data[2]),bpf_ktime_get_ns() - time);
 
 		
     return 0;
