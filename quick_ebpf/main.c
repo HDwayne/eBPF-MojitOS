@@ -50,10 +50,21 @@ int main(int argc, char **argv)
     printf("%s eBPF program loaded and attached successfully\n", pdata->name);
   }
 
-  // TODO: Add application logic here like waiting for signals ctrl+c, loop, etc.
   while (!end_loop)
   {
-    sleep(1);
+    for (int i = 0; i < sizeof(ebpf_programs) / sizeof(ebpf_programs[0]); i++)
+    {
+
+      if (!ebpf_programs[i].skel)
+      {
+        fprintf(stderr, "Failed to open and load the skeleton\n");
+        continue;
+      }
+      fprintf(stdout, "processing program: %s\n", ebpf_programs[i].name);
+
+      // TODO - get the map and print the values
+      sleep(1);
+    }
   }
 
   fprintf(stdout, "Cleaning up and detaching eBPF programs\n");
