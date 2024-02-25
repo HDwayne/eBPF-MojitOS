@@ -32,7 +32,6 @@
 #include <sys/types.h>
 #include <ifaddrs.h>
 #include <net/if.h>
-#include <linux/bpf.h>
 #include "network_ebpf_ingress.skel.h"
 #include "network_ebpf_egress.skel.h"
 #include "network_ebpf.h"
