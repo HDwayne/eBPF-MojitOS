@@ -1,7 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <bpf/libbpf.h>
+#include <signal.h>
+#include <unistd.h>
 #include "build/ebpf_programs_autogen.h"
+
+volatile sig_atomic_t end_loop;
+
+void sig_handler(int signo)
+{
+  end_loop = 1;
+}
 
 static int my_libbpf_print(enum libbpf_print_level level, const char *format, va_list args)
 {
@@ -10,6 +19,8 @@ static int my_libbpf_print(enum libbpf_print_level level, const char *format, va
 
 int main(int argc, char **argv)
 {
+  signal(SIGINT, sig_handler);
+
   int err = 0;
 
   libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
@@ -40,6 +51,12 @@ int main(int argc, char **argv)
   }
 
   // TODO: Add application logic here like waiting for signals ctrl+c, loop, etc.
+  while (!end_loop)
+  {
+    sleep(1);
+  }
+
+  fprintf(stdout, "Cleaning up and detaching eBPF programs\n");
 
 cleanup:
   for (int i = 0; i < sizeof(ebpf_programs) / sizeof(ebpf_programs[0]); i++)
