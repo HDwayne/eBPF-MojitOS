@@ -27,7 +27,7 @@ This repository contains various experiments and plugins related to eBPF technol
 
 - **quick_ebpf**: Simple programs to experiment eBPF capabilities.
 
-- **setup.sh**: eBPF Setup script.
+- **setup.sh**: eBPF Setup script (debian distro).
 
 ## Usage
 
