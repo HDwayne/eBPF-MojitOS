@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-// #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
-// #include <bpf/bpf_helpers.h>
 #include <signal.h>
 #include <unistd.h>
 #include "build/ebpf_programs_autogen.h"
@@ -73,6 +71,19 @@ int main(int argc, char **argv)
       else
       {
         fprintf(stdout, "map_fd: %d\n", map_fd);
+
+        int key = 0;
+        int value = 0;
+        int ret = bpf_map_lookup_elem(map_fd, &key, &value);
+        if (ret < 0)
+        {
+          fprintf(stderr, "Failed to lookup map element for %s\n", ebpf_programs[i].name);
+          continue;
+        }
+        else
+        {
+          fprintf(stdout, "key: %d, value: %d\n", key, value);
+        }
       }
     }
     sleep(5);

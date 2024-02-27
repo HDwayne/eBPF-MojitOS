@@ -37,18 +37,14 @@ $(BUILD_DIR)/%.bpf.skel.h: $(BUILD_DIR)/%.bpf.o
 	$(BPFTOOL) gen skeleton $< > $@
 
 autogen: $(EBPF_HEADERS)
+# Include des headers
 	@echo "// Généré automatiquement. Ne pas modifier." > $(AUTOGEN_HEADER)
+
 	@$(foreach hdr,$(EBPF_HEADERS),echo '#include "$(subst ./,,$(hdr))"' >> $(AUTOGEN_HEADER);)
 	
+# Implementations of get_<program_name>_map_fd functions
 	@echo "" >> $(AUTOGEN_HEADER)
 
-# # Function declarations for getting map fds
-# 	@$(foreach hdr,$(EBPF_HEADERS), \
-# 	    name=`echo "$(notdir $(hdr))" | sed 's/\.bpf\.skel\.h//g'`; \
-# 	    echo "int get_$$name""_map_fd(void *skel);" >> $(AUTOGEN_HEADER); \
-# 	)
-
-# Implementations of get_<program_name>_map_fd functions
 	@$(foreach hdr,$(EBPF_HEADERS), \
 	    name=`echo "$(notdir $(hdr))" | sed 's/\.bpf\.skel\.h//g'`; \
 	    map_name=`grep 'struct bpf_map \*' $(hdr) | sed -e 's/.*struct bpf_map \*\([a-zA-Z_0-9]*\);/\1/' | head -1`; \
@@ -57,9 +53,9 @@ autogen: $(EBPF_HEADERS)
 	    echo "}" >> $(AUTOGEN_HEADER); \
 	)
 
+# Struct declaration
 	@echo "" >> $(AUTOGEN_HEADER)
 
-# Struct declaration
 	@echo "struct bpf_program_data" >> $(AUTOGEN_HEADER)
 	@echo "{" >> $(AUTOGEN_HEADER)
 	@echo "    const char *name;" >> $(AUTOGEN_HEADER)
@@ -70,8 +66,9 @@ autogen: $(EBPF_HEADERS)
 	@echo "    int (*get_map_fd)(void *);" >> $(AUTOGEN_HEADER)
 	@echo "};" >> $(AUTOGEN_HEADER)
 
-
+# Array of ebpf_programs
 	@echo "" >> $(AUTOGEN_HEADER)
+
 	@echo "static struct bpf_program_data ebpf_programs[] = {" >> $(AUTOGEN_HEADER)
 	@$(foreach hdr,$(EBPF_HEADERS), \
 		echo "    {" >> $(AUTOGEN_HEADER); \
