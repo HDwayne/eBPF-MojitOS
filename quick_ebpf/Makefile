@@ -39,7 +39,27 @@ $(BUILD_DIR)/%.bpf.skel.h: $(BUILD_DIR)/%.bpf.o
 autogen: $(EBPF_HEADERS)
 	@echo "// Généré automatiquement. Ne pas modifier." > $(AUTOGEN_HEADER)
 	@$(foreach hdr,$(EBPF_HEADERS),echo '#include "$(subst ./,,$(hdr))"' >> $(AUTOGEN_HEADER);)
+	
 	@echo "" >> $(AUTOGEN_HEADER)
+
+# # Function declarations for getting map fds
+# 	@$(foreach hdr,$(EBPF_HEADERS), \
+# 	    name=`echo "$(notdir $(hdr))" | sed 's/\.bpf\.skel\.h//g'`; \
+# 	    echo "int get_$$name""_map_fd(void *skel);" >> $(AUTOGEN_HEADER); \
+# 	)
+
+# Implementations of get_<program_name>_map_fd functions
+	@$(foreach hdr,$(EBPF_HEADERS), \
+	    name=`echo "$(notdir $(hdr))" | sed 's/\.bpf\.skel\.h//g'`; \
+	    map_name=`grep 'struct bpf_map \*' $(hdr) | sed -e 's/.*struct bpf_map \*\([a-zA-Z_0-9]*\);/\1/' | head -1`; \
+	    echo "int get_$$name""_map_fd(void *skel) {" >> $(AUTOGEN_HEADER); \
+	    echo "	return bpf_map__fd(((struct $$name""_bpf *)skel)->maps.$$map_name"");" >> $(AUTOGEN_HEADER); \
+	    echo "}" >> $(AUTOGEN_HEADER); \
+	)
+
+	@echo "" >> $(AUTOGEN_HEADER)
+
+# Struct declaration
 	@echo "struct bpf_program_data" >> $(AUTOGEN_HEADER)
 	@echo "{" >> $(AUTOGEN_HEADER)
 	@echo "    const char *name;" >> $(AUTOGEN_HEADER)
@@ -47,7 +67,10 @@ autogen: $(EBPF_HEADERS)
 	@echo "    void (*skeleton_destroy)(void *);" >> $(AUTOGEN_HEADER)
 	@echo "    void *(*skeleton_open_and_load)(void);" >> $(AUTOGEN_HEADER)
 	@echo "    int (*skeleton_attach)(void *);" >> $(AUTOGEN_HEADER)
+	@echo "    int (*get_map_fd)(void *);" >> $(AUTOGEN_HEADER)
 	@echo "};" >> $(AUTOGEN_HEADER)
+
+
 	@echo "" >> $(AUTOGEN_HEADER)
 	@echo "static struct bpf_program_data ebpf_programs[] = {" >> $(AUTOGEN_HEADER)
 	@$(foreach hdr,$(EBPF_HEADERS), \
@@ -57,6 +80,7 @@ autogen: $(EBPF_HEADERS)
 		echo "        .skeleton_open_and_load = (void *(*)(void))$$name""_bpf__open_and_load," >> $(AUTOGEN_HEADER); \
 		echo "        .skeleton_attach = (int (*)(void *))$$name""_bpf__attach," >> $(AUTOGEN_HEADER); \
 		echo "        .skeleton_destroy = (void (*)(void *))$$name""_bpf__destroy," >> $(AUTOGEN_HEADER); \
+		echo "        .get_map_fd = get_$$name""_map_fd," >> $(AUTOGEN_HEADER); \
 		echo "    }," >> $(AUTOGEN_HEADER); \
 	)
 	@echo "};" >> $(AUTOGEN_HEADER)

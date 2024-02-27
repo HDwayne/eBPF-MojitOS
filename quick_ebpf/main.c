@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <bpf/libbpf.h>
+// #include <bpf/libbpf.h>
+#include <bpf/bpf.h>
+// #include <bpf/bpf_helpers.h>
 #include <signal.h>
 #include <unistd.h>
 #include "build/ebpf_programs_autogen.h"
@@ -62,9 +64,18 @@ int main(int argc, char **argv)
       }
       fprintf(stdout, "processing program: %s\n", ebpf_programs[i].name);
 
-      // TODO - get the map and print the values
-      sleep(1);
+      int map_fd = ebpf_programs[i].get_map_fd(ebpf_programs[i].skel);
+      if (map_fd < 0)
+      {
+        fprintf(stderr, "Failed to get map fd for %s\n", ebpf_programs[i].name);
+        continue;
+      }
+      else
+      {
+        fprintf(stdout, "map_fd: %d\n", map_fd);
+      }
     }
+    sleep(5);
   }
 
   fprintf(stdout, "Cleaning up and detaching eBPF programs\n");
