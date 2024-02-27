@@ -62,29 +62,29 @@ int main(int argc, char **argv)
       }
       fprintf(stdout, "processing program: %s\n", ebpf_programs[i].name);
 
-      int map_fd = ebpf_programs[i].get_map_fd(ebpf_programs[i].skel);
-      if (map_fd < 0)
-      {
-        fprintf(stderr, "Failed to get map fd for %s\n", ebpf_programs[i].name);
-        continue;
-      }
-      else
-      {
-        fprintf(stdout, "map_fd: %d\n", map_fd);
+      // int map_fd = ebpf_programs[i].get_map_fd(ebpf_programs[i].skel);
+      // if (map_fd < 0)
+      // {
+      //   fprintf(stderr, "Failed to get map fd for %s\n", ebpf_programs[i].name);
+      //   continue;
+      // }
+      // else
+      // {
+      //   fprintf(stdout, "map_fd: %d\n", map_fd);
 
-        int key = 0;
-        int value = 0;
-        int ret = bpf_map_lookup_elem(map_fd, &key, &value);
-        if (ret < 0)
-        {
-          fprintf(stderr, "Failed to lookup map element for %s\n", ebpf_programs[i].name);
-          continue;
-        }
-        else
-        {
-          fprintf(stdout, "key: %d, value: %d\n", key, value);
-        }
-      }
+      //   __u32 key = bpf_map_get_next_key(map_fd, NULL, &key);
+      //   __u64 value = 0;
+      //   int ret = bpf_map_lookup_elem(map_fd, &key, &value);
+      //   if (ret)
+      //   {
+      //     fprintf(stderr, "Failed to lookup map element for %s\n", ebpf_programs[i].name);
+      //     continue;
+      //   }
+      //   else
+      //   {
+      //     fprintf(stdout, "key: %d, value: %llu\n", key, value);
+      //   }
+      // }
     }
     sleep(5);
   }
