@@ -17,5 +17,5 @@ jobs:
     - name: Run a script  # Nom de l'étape
       run: |
         echo "Run the script!"
-        echo ls -al ${GITHUB_WORKSPACE}
+        ls -al ${GITHUB_WORKSPACE}
 
