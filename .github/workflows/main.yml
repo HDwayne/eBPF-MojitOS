@@ -1,0 +1,15 @@
+name: Run Shell Script to execute make clean
+
+on: [push]  # Déclencheur du workflow
+
+jobs:
+  run_script:
+    runs-on: ubuntu-latest  # L'environnement d'exécution
+
+    steps:
+    - uses: actions/checkout@v3  # Étape pour cloner votre dépôt
+
+    - name: Run a script  # Nom de l'étape
+      run: |
+        echo "Run the script!"
+        ./clean_project.sh
