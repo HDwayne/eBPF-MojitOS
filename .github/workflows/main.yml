@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest  # L'environnement d'exécution
     defaults:
       run:
-        working-directory: ./scripts
+        working-directory: ./
 
 
     steps:
