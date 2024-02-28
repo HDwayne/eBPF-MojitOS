@@ -17,4 +17,6 @@ find "$start_dir" -type f -name 'Makefile' | while read -r makefile; do
     (cd "$makefile_dir" && make clean)
 done
 
+git add .
+
 exit 0
