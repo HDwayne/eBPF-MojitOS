@@ -7,6 +7,11 @@ BPFTOOL=bpftool
 EBPF_PROGRAMS_PATH=./ebpf_programs
 BUILD_DIR := ./build
 
+# Library files path
+LIBS_DIR := ./libs
+LIBS_SOURCES := $(wildcard $(LIBS_DIR)/*.c)
+LIBS_OBJECTS := $(patsubst $(LIBS_DIR)/%.c,$(BUILD_DIR)/%.o,$(LIBS_SOURCES))
+
 # Assurez-vous que le répertoire de build existe
 $(shell mkdir -p $(BUILD_DIR))
 
@@ -16,7 +21,6 @@ EBPF_SOURCES=$(wildcard $(EBPF_PROGRAMS_PATH)/*.bpf.c)
 EBPF_OBJECTS=$(patsubst $(EBPF_PROGRAMS_PATH)/%.bpf.c,$(BUILD_DIR)/%.bpf.o,$(EBPF_SOURCES))
 # Transformer les .bpf.c en .skel.h dans le répertoire de build
 EBPF_HEADERS=$(patsubst $(EBPF_PROGRAMS_PATH)/%.bpf.c,$(BUILD_DIR)/%.bpf.skel.h,$(EBPF_SOURCES))
-
 
 # Fichier généré contenant les #include et la structure ebpf_programs
 AUTOGEN_HEADER=$(BUILD_DIR)/ebpf_programs_autogen.h
@@ -35,6 +39,9 @@ $(BUILD_DIR)/%.bpf.o: $(EBPF_PROGRAMS_PATH)/%.bpf.c
 
 $(BUILD_DIR)/%.bpf.skel.h: $(BUILD_DIR)/%.bpf.o
 	$(BPFTOOL) gen skeleton $< > $@
+
+$(BUILD_DIR)/%.o: $(LIBS_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 autogen: $(EBPF_HEADERS)
 # Include des headers
@@ -82,8 +89,8 @@ autogen: $(EBPF_HEADERS)
 	)
 	@echo "};" >> $(AUTOGEN_HEADER)
 
-main: main.c $(AUTOGEN_HEADER)
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+main: main.c $(AUTOGEN_HEADER) $(LIBS_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ main.c $(LIBS_OBJECTS) $(LDFLAGS)
 
 clean:
 	rm -rf $(BUILD_DIR) main
