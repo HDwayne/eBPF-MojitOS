@@ -12,4 +12,4 @@ jobs:
     - name: Run a script  # Nom de l'étape
       run: |
         echo "Run the script!"
-        ./clean_project.sh
+        ls -al
