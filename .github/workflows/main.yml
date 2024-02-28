@@ -12,4 +12,4 @@ jobs:
     - name: Run a script  # Nom de l'étape
       run: |
         echo "Run the script!"
-        ls -al
+        ./home/runner/work/eBPF-MojitOS/eBPF-MojitOS/clean_project.sh
