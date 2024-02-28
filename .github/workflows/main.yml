@@ -17,5 +17,5 @@ jobs:
     - name: Run a script  # Nom de l'étape
       run: |
         echo "Run the script!"
-        ls -al ${GITHUB_WORKSPACE}
+        bash ${GITHUB_WORKSPACE}/project_clean.sh
 
