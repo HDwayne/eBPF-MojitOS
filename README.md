@@ -15,6 +15,8 @@ This repository contains various experiments and plugins related to eBPF technol
 ├── plugins                    # Directory for eBPF plugins
 │   ├── Packet_counter
 │   └── ...
+├── Hooks                      # Directory with hooks for git
+    └── pre-commit             # Add the files to .git/hooks folder (on your local folder)
 ├── quick_ebpf                 # Directory for quick eBPF experiments
 └── setup.sh                   # Setup script
 ```

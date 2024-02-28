@@ -2,11 +2,11 @@
 
 # Définir le chemin de départ pour la recherche
 # Utilisez "." pour représenter le répertoire courant ou spécifiez un chemin spécifique
-START_DIR="."
+start_dir="."
 
 # Recherche tous les fichiers nommés 'Makefile' dans l'arborescence de fichiers
 # à partir du répertoire spécifié dans START_DIR
-find "$START_DIR" -type f -name 'Makefile' | while read -r makefile; do
+find "$start_dir" -type f -name 'Makefile' | while read -r makefile; do
     # Affiche le chemin du Makefile trouvé
     echo "Exécution de 'make clean' pour: $makefile"
     
@@ -16,3 +16,5 @@ find "$START_DIR" -type f -name 'Makefile' | while read -r makefile; do
     # Change au répertoire du Makefile avant d'exécuter 'make clean'
     (cd "$makefile_dir" && make clean)
 done
+
+exit 0
