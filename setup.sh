@@ -71,7 +71,8 @@ if [ -n "$LIBBPF_PATH" ]; then
     LIBBPF_DIR=$(dirname "$LIBBPF_PATH")
     
     # Mise à jour du cache ldconfig
-    sudo ldconfig $LIBBPF_DIR
+    echo $LIBBPF_DIR | sudo tee /etc/ld.so.conf.d/libbpf.conf
+    sudo ldconfig 
     echo "Le chemin $LIBBPF_DIR a été ajouté à ldconfig."
 else
     echo "libbpf.so.1 n'a pas été trouvé hors du dossier /home."
