@@ -32,7 +32,7 @@ int main(void)
         if (fin)
             break;
 
-		sleep(10);
+		sleep(2);
 
         //On parcourt les 5 premiere clé de la map pour afficher les valeurs
         for (key=0; key<16; key++){
