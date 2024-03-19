@@ -13,6 +13,39 @@ static void signaltrap(int signo)
     fin = 1;
 }
 
+
+
+unsigned int init_kmalloc_ebpf(char *, void **){
+
+
+
+}
+unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
+
+
+
+
+
+}
+void clean_kmalloc_ebpf(void *){
+
+
+
+
+
+}
+void label_kmalloc_ebpf(char **labels, void *){
+
+
+
+
+
+    
+}
+
+
+
+
 int main(void)
 {
     signal(SIGINT, signaltrap);

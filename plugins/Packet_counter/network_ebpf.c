@@ -280,7 +280,6 @@ unsigned int get_network(uint64_t *results, void *ptr)
 
     for (int i = 0; i < state->ndev; i++) {
 
-
         if (bpf_map__lookup_elem(state->skel->skel_ingress->maps.my_data_ingress,&i,sizeof(int),&res_ingress,sizeof(cpt_pckt),BPF_ANY) <0 || bpf_map__lookup_elem(state->skel->skel_egress->maps.my_data_egress,&i,sizeof(int),&res_egress,sizeof(cpt_pckt),BPF_ANY) <0 ){
             printf("Erreur : impossible de lire les informations contenus dans les maps \n");
             return ERROR_ACCESS_ELEM;
