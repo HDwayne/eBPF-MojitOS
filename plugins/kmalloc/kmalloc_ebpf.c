@@ -14,7 +14,6 @@ struct Kmalloc {
     uint64_t tmp_values[NB_DATA];
     struct kmalloc_ebpf_bpf *skel;
     char labels[NB_DATA][128];
-    char devs[NB_DATA][128];
     int error;
     int ndata;
 };
@@ -39,25 +38,25 @@ unsigned int init_kmalloc_ebpf(char *, void **){
 }
 unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
 
-    //TODO
 
     Kmalloc *state = ( Kmalloc *)ptr;
 
-    uint64_t bytes_req,bytes_alloc;
+    uint64_t bytes;
 
 
-    if (bpf_map__lookup_elem(state->skel,&i,sizeof(int),&bytes_req,sizeof(uint64_t),BPF_ANY) <0 || bpf_map__lookup_elem(state->skel,&i,sizeof(int),&bytes_alloc,sizeof(uint64_t),BPF_ANY)){
-        printf("Erreur : impossible de lire les informations contenus dans les maps \n");
-        return ERROR_ACCESS_ELEM;
-    }
 
+    for(int i=0;i<NB_DATA;i++){
+        if (bpf_map__lookup_elem(state->skel,&i,sizeof(int),&bytes,sizeof(uint64_t),BPF_ANY) <0){
+            printf("Erreur : impossible de lire les informations contenus dans les maps \n");
+            return ERROR_ACCESS_ELEM;
+        }
 
   
-    results[0] = 
-    results[1] = 
+        results[i] = modulo_substraction(bytes,state->tmp_values[i]);
 
-    state->tmp_values[0]= 
-    state->tmp_values[1] = 
+        state->tmp_values[i]= bytes;
+
+    }
 
     
 
