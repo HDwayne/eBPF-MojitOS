@@ -4,8 +4,24 @@
 #include "test.skel.h"
 #include <linux/bpf.h>
 #include <signal.h>
+#include "kmalloc_ebpf.skel.h"
 
-//Capture du signal pour arrêter le programme
+
+#define NB_DATA 6
+
+struct Kmalloc {
+    uint64_t values[NB_DATA];
+    uint64_t tmp_values[NB_DATA];
+    struct kmalloc_ebpf_bpf *skel;
+    char labels[NB_DATA][128];
+    char devs[NB_DATA][128];
+    int error;
+    int ndata;
+};
+
+typedef struct Kmalloc Kmalloc;
+
+//Capture du signal pour arrêter le programme ( à enlever )
 int fin = 0;
 static void signaltrap(int signo)
 {
@@ -19,6 +35,7 @@ unsigned int init_kmalloc_ebpf(char *, void **){
 
 
 
+
 }
 unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
 
@@ -27,23 +44,48 @@ unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
 
 
 }
+
 void clean_kmalloc_ebpf(void *){
 
 
+    Kmalloc *state = ( Kmalloc *)ptr;
+
+
+    if (state == NULL) {
+        return;
+    }
+
+
+    if ( state ->error < -1 || state->error == 0 ){
+
+        if ( state->error < -3 || state->error == 0 ){
+
+            network_ebpf_ingress_bpf__detach(state->skel);
+        }
+
+        network_ebpf_ingress_bpf__destroy(state->skel);
+    }
+
+    free(state->skel);
+    free(state);
 
 
 
 }
+
 void label_kmalloc_ebpf(char **labels, void *){
 
 
+    struct Kmalloc *state = (struct Kmalloc *) ptr;
 
-
-
-    
+    for (int i = 0; i < state->ndata; i++) {
+        labels[i] = state->labels[i];
+    }
 }
 
 
+
+//----------à elever lors de la release----------------------//
 
 
 int main(void)
