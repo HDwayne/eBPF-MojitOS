@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
-#include "test.skel.h"
 #include <linux/bpf.h>
 #include <signal.h>
+#include "util.h"
 #include "kmalloc_ebpf.skel.h"
 
 
@@ -34,11 +34,37 @@ static void signaltrap(int signo)
 unsigned int init_kmalloc_ebpf(char *, void **){
 
 
-
+    //TODO
 
 }
 unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
 
+    //TODO
+
+    Kmalloc *state = ( Kmalloc *)ptr;
+
+    uint64_t bytes_req,bytes_alloc;
+
+
+    if (bpf_map__lookup_elem(state->skel,&i,sizeof(int),&bytes_req,sizeof(uint64_t),BPF_ANY) <0 || bpf_map__lookup_elem(state->skel,&i,sizeof(int),&bytes_alloc,sizeof(uint64_t),BPF_ANY)){
+        printf("Erreur : impossible de lire les informations contenus dans les maps \n");
+        return ERROR_ACCESS_ELEM;
+    }
+
+
+  
+    results[0] = 
+    results[1] = 
+
+    state->tmp_values[0]= 
+    state->tmp_values[1] = 
+
+    
+
+
+    
+
+    return NB_DATA;
 
 
 

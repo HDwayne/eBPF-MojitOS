@@ -18,6 +18,14 @@ struct s_mystruct
     int node;
 };
 
+
+struct {
+	__uint(type,BPF_MAP_TYPE_ARRAY);
+	__type(key,int);
+	__type(value,uint64_t);
+	__uint(max_entries,2);
+} data_kmalloc SEC(".maps");
+
 SEC("tracepoint/kmem/kmalloc")
 void kmalloc(struct s_mystruct *ctx)
 {
