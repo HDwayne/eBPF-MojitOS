@@ -18,7 +18,7 @@
 
  *******************************************************/
 
-
+/*here, you just have to modify every word "plugin" by your word"*/
 
 #include <stdio.h>
 #include <fcntl.h>
