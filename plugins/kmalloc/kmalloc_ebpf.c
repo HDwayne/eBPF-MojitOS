@@ -11,16 +11,21 @@
 #define NB_SENSOR 2
 
 
+#define ERROR_OPEN_PROG -1
+#define ERROR_LOAD_PROG -2
+#define ERROR_ACCESS_ELEM -3
+
+
 char *_labels_kmalloc_ebpf[NB_SENSOR] = {
-    "%s:rxp",
-    "%s:txp",
+    "%s:bytes_req",
+    "%s:bytes_alloc",
 };
 
 struct Kmalloc {
-    uint64_t values[NB_DATA];
-    uint64_t tmp_values[NB_DATA];
+    uint64_t values[NB_SENSOR];
+    uint64_t tmp_values[NB_SENSOR];
     struct kmalloc_ebpf_bpf *skel;
-    char labels[NB_DATA][128];
+    char labels[NB_SENSOR][128];
     int error;
     int ndata;
 };
@@ -34,8 +39,6 @@ static void signaltrap(int signo)
     printf("Signal %d received\n", signo);
     fin = 1;
 }
-
-
 
 unsigned int init_kmalloc_ebpf(char *, void **){
 
@@ -56,24 +59,24 @@ unsigned int init_kmalloc_ebpf(char *, void **){
     }
 
 
-
-
     if( kmalloc_ebpf_bpf__load(state->skel) < 0 ){
         printf("impossible de charger le programme dans le kernel\n");
         state->error=ERROR_LOAD_PROG;
-        //clean_(state);
+        clean_kmalloc_ebpf(state);
         exit(ERROR_LOAD_PROG);
         
     }
+
+    state->ndata=NB_SENSOR;
 
     *ptr = (void *) state;
 
 
 
-    return state->ndev * NB_SENSOR;
+    return NB_SENSOR;
 }
 
-unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
+unsigned int get_kmalloc_ebpf(uint64_t *results, void *ptr){
 
 
     Kmalloc *state = ( Kmalloc *)ptr;
@@ -82,10 +85,12 @@ unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
 
 
 
-    for(int i=0;i<NB_DATA;i++){
+    for(int i=0;i<state->ndata;i++){
         if (bpf_map__lookup_elem(state->skel,&i,sizeof(int),&bytes,sizeof(uint64_t),BPF_ANY) <0){
             printf("Erreur : impossible de lire les informations contenus dans les maps \n");
-            return ERROR_ACCESS_ELEM;
+            state->error= ERROR_ACCESS_ELEM;
+            clean_kmalloc_ebpf(state);
+            exit(ERROR_ACCESS_ELEM)
         }
 
   
@@ -97,11 +102,7 @@ unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
 
     
 
-    return NB_DATA;
-
-
-
-
+    return state->ndata;
 }
 
 void clean_kmalloc_ebpf(void *){
@@ -117,7 +118,7 @@ void clean_kmalloc_ebpf(void *){
 
     if ( state ->error < -1 || state->error == 0 ){
 
-        if ( state->error < -3 || state->error == 0 ){
+        if ( state->error == -3 || state->error == 0 ){
 
             network_ebpf_ingress_bpf__detach(state->skel);
         }

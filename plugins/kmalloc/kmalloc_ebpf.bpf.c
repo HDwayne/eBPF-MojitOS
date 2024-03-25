@@ -30,7 +30,28 @@ SEC("tracepoint/kmem/kmalloc")
 void kmalloc(struct s_mystruct *ctx)
 {
 
-    bpf_printk("kmalloc: call_site : %lu  | ptr %p | bytes_req : %zu | bytes allocs : %zu\n", ctx->call_site, ctx->ptr, ctx->bytes_req, ctx->bytes_alloc);
+    
+    uint64_t bytes_req = (uint64_t)ctx->bytes_req;
+	uint64_t bytes_alloc = (uint64_t)ctx->bytes_alloc;
+
+    size_t *rec ;
+
+    for ( int key=0 ;  key < 2; key++ ){
+
+        rec = bpf_map_lookup_elem(&data_kmalloc,&key);
+
+        if(!rec){
+		    bpf_printk("Erreur : récupération des données dans la map impossible\n");
+            return 1;
+        }
+
+        if (key==0){
+            __sync_fetch_and_add(rec,bytes_req);
+        }else{
+            __sync_fetch_and_add(rec,bytes_alloc);
+        }
+
+    }
 }
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
