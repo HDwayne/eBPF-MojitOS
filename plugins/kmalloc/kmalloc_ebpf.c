@@ -8,6 +8,13 @@
 
 
 #define NB_DATA 6
+#define NB_SENSOR 2
+
+
+char *_labels_kmalloc_ebpf[NB_SENSOR] = {
+    "%s:rxp",
+    "%s:txp",
+};
 
 struct Kmalloc {
     uint64_t values[NB_DATA];
@@ -33,9 +40,39 @@ static void signaltrap(int signo)
 unsigned int init_kmalloc_ebpf(char *, void **){
 
 
-    //TODO
+    if(dev==NULL){
+        exit(1);
+    }
 
+    struct Kmalloc*state = malloc(sizeof(struct Kmalloc));
+    memset(state, '\0', sizeof(*state));
+
+    state->skel = kmalloc_ebpf_bpf__open();
+
+    if(!(state->skel)){
+        printf("Impossible d'ouvrir le programme\n");
+        state->error=ERROR_OPEN_PROG;
+        exit(ERROR_OPEN_PROG);
+    }
+
+
+
+
+    if( kmalloc_ebpf_bpf__load(state->skel) < 0 ){
+        printf("impossible de charger le programme dans le kernel\n");
+        state->error=ERROR_LOAD_PROG;
+        //clean_(state);
+        exit(ERROR_LOAD_PROG);
+        
+    }
+
+    *ptr = (void *) state;
+
+
+
+    return state->ndev * NB_SENSOR;
 }
+
 unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
 
 
@@ -57,9 +94,6 @@ unsigned int get_kmalloc_ebpf(uint64_t *results, void *){
         state->tmp_values[i]= bytes;
 
     }
-
-    
-
 
     
 

@@ -24,7 +24,7 @@ void clean_kmalloc_ebpf(void *);
 void label_kmalloc_ebpf(char **labels, void *);
 
 
-Sensor network_ebpf = {
+Sensor kmalloc_ebpf = {
     .init = init_kmalloc_ebpf,
     .get = get_kmalloc_ebpf,
     .clean = clean_kmalloc_ebpf,
@@ -32,7 +32,7 @@ Sensor network_ebpf = {
     .nb_opt = 1,
 };
 
-Optparse network_ebpf_opt[1] = {
+Optparse kmalloc_ebpf_opt[1] = {
     {
         .longname = "kmalloc_ebpf",
         .shortname = 'K',
