@@ -80,12 +80,12 @@ unsigned int init_plugin_ebpf(char *dev, void **ptr)
         exit(ERROR_LOAD_PROG);
         
     }
-
+    state->ndev=NB_SENSOR
     *ptr = (void *) state;
 
 
 
-    return state->ndev * NB_SENSOR;
+    return NB_SENSOR;
     
 }
 
@@ -104,7 +104,9 @@ unsigned int get_plugin_ebpf(uint64_t *results, void *ptr)
 
         if (bpf_map__lookup_elem(state->skel,&i,sizeof(int),&val,sizeof(int),BPF_ANY) <0){
             printf("Erreur : impossible de lire les informations contenus dans les maps \n");
-            return ERROR_ACCESS_ELEM;
+            state->error=ERROR_ACCESS_ELEM;
+            clean_plugin_ebpf(state);
+            exit(ERROR_ACCESS_ELEM);
         }
 
 
@@ -143,6 +145,6 @@ void label_plugin_ebpf(char **labels, void *ptr)
     struct Plugin *state = (struct Plugin *) ptr;
 
     for (int i = 0; i < state->ndev; i++) {
-        labels[i] = state->labels[i
+        labels[i] = state->labels[i];
     }
 }
