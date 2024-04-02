@@ -27,7 +27,7 @@ struct {
 } data_kmalloc SEC(".maps");
 
 SEC("tracepoint/kmem/kmalloc")
-void kmalloc(struct s_mystruct *ctx)
+int kmalloc(struct s_mystruct *ctx)
 {
 
     
@@ -35,23 +35,30 @@ void kmalloc(struct s_mystruct *ctx)
 	uint64_t bytes_alloc = (uint64_t)ctx->bytes_alloc;
 
     size_t *rec ;
+    int key=0;
+    //for ( int key=0 ;  key < 2; key+=1 ){
 
-    for ( int key=0 ;  key < 2; key++ ){
+    rec = bpf_map_lookup_elem(&data_kmalloc,&key);
 
-        rec = bpf_map_lookup_elem(&data_kmalloc,&key);
-
-        if(!rec){
-		    bpf_printk("Erreur : récupération des données dans la map impossible\n");
-            return 1;
-        }
-
-        if (key==0){
-            __sync_fetch_and_add(rec,bytes_req);
-        }else{
-            __sync_fetch_and_add(rec,bytes_alloc);
-        }
-
+    if(!rec){
+		bpf_printk("Erreur : récupération des données dans la map impossible\n");
+        return 1;
     }
+
+    __sync_fetch_and_add(rec,bytes_req);
+
+    key++;
+
+    rec = bpf_map_lookup_elem(&data_kmalloc,&key);
+
+    if(!rec){
+		bpf_printk("Erreur : récupération des données dans la map impossible\n");
+        return 1;
+    }
+
+     __sync_fetch_and_add(rec,bytes_alloc);
+
+    return 0;
 }
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";

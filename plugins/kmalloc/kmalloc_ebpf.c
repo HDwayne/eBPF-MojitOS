@@ -6,8 +6,6 @@
 #include "util.h"
 #include "kmalloc_ebpf.skel.h"
 
-
-#define NB_DATA 6
 #define NB_SENSOR 2
 
 
@@ -36,11 +34,13 @@ typedef struct Kmalloc Kmalloc;
 int fin = 0;
 static void signaltrap(int signo)
 {
-    printf("Signal %d received\n", signo);
     fin = 1;
 }
 
-unsigned int init_kmalloc_ebpf(char *, void **){
+void clean_kmalloc_ebpf(void *ptr);
+
+
+unsigned int init_kmalloc_ebpf(char *dev , void **ptr){
 
 
     if(dev==NULL){
@@ -86,11 +86,11 @@ unsigned int get_kmalloc_ebpf(uint64_t *results, void *ptr){
 
 
     for(int i=0;i<state->ndata;i++){
-        if (bpf_map__lookup_elem(state->skel,&i,sizeof(int),&bytes,sizeof(uint64_t),BPF_ANY) <0){
+        if (bpf_map__lookup_elem(state->skel->maps.data_kmalloc,&i,sizeof(int),&bytes,sizeof(uint64_t),BPF_ANY) <0){
             printf("Erreur : impossible de lire les informations contenus dans les maps \n");
             state->error= ERROR_ACCESS_ELEM;
             clean_kmalloc_ebpf(state);
-            exit(ERROR_ACCESS_ELEM)
+            exit(ERROR_ACCESS_ELEM);
         }
 
   
@@ -105,7 +105,7 @@ unsigned int get_kmalloc_ebpf(uint64_t *results, void *ptr){
     return state->ndata;
 }
 
-void clean_kmalloc_ebpf(void *){
+void clean_kmalloc_ebpf(void *ptr){
 
 
     Kmalloc *state = ( Kmalloc *)ptr;
@@ -120,20 +120,19 @@ void clean_kmalloc_ebpf(void *){
 
         if ( state->error == -3 || state->error == 0 ){
 
-            network_ebpf_ingress_bpf__detach(state->skel);
+            kmalloc_ebpf_bpf__detach(state->skel);
         }
 
-        network_ebpf_ingress_bpf__destroy(state->skel);
+        kmalloc_ebpf_bpf__destroy(state->skel);
     }
-
-    free(state->skel);
+    
     free(state);
 
 
 
 }
 
-void label_kmalloc_ebpf(char **labels, void *){
+void label_kmalloc_ebpf(char **labels, void *ptr){
 
 
     struct Kmalloc *state = (struct Kmalloc *) ptr;
@@ -147,25 +146,42 @@ void label_kmalloc_ebpf(char **labels, void *){
 
 //----------à elever lors de la release----------------------//
 
-
-int main(void)
+int main(int argc, char *argv[])
 {
-    signal(SIGINT, signaltrap);
+    signal(SIGINT,signaltrap);
+    void *ptr = NULL;
 
+    int nb;
+    if( (nb=init_kmalloc_ebpf(argv[1],&ptr))<0){
+        return 1;
+    }
 
-    struct test_bpf *skel = test_bpf__open();
-    test_bpf__load(skel);
-    test_bpf__attach(skel);
+    uint64_t tab_res[nb];char **labels = (char **)malloc(nb*sizeof(char*));
 
-	while(true){
+    label_kmalloc_ebpf(labels,ptr);
 
-        if (fin)
-            break;
-	}
+    for(int i=0;i<nb;i++){
+       printf("%s ",labels[i]);
+    }
+    printf("\n");
 
-    //On détache le programme bpf
-    test_bpf__detach(skel);
-    test_bpf__destroy(skel);
+    while (true)
+    {
+        if(fin==1){
+            printf("Arrêt du programme\n");
 
+            clean_kmalloc_ebpf(ptr);
+            exit(0);
+        }
+        if(get_kmalloc_ebpf(tab_res,ptr)<0){
+            return 2;
+        }
+        for(int i=0;i<nb;i++){
+            printf("%ld ",tab_res[i]);
+        }
+        printf("\n");
+        sleep(1);
+    }
+    
     return 0;
 }

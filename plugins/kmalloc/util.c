@@ -1,5 +1,5 @@
 /*******************************************************
- Copyright (C) 2018-2023 Georges Da Costa <georges.da-costa@irit.fr>
+ Copyright (C) 2022-2023 Georges Da Costa <georges.da-costa@irit.fr>
 
     This file is part of Mojitos.
 
@@ -16,28 +16,13 @@
     You should have received a copy of the GNU General Public License
     along with MojitO/S.  If not, see <https://www.gnu.org/licenses/>.
 
- *******************************************************/
+*******************************************************/
 
-unsigned int init_kmalloc_ebpf(char *, void **);
-unsigned int get_kmalloc_ebpf(uint64_t *results, void *);
-void clean_kmalloc_ebpf(void *);
-void label_kmalloc_ebpf(char **labels, void *);
+#include "util.h"
 
 
-/*Sensor kmalloc_ebpf = {
-    .init = init_kmalloc_ebpf,
-    .get = get_kmalloc_ebpf,
-    .clean = clean_kmalloc_ebpf,
-    .label = label_kmalloc_ebpf,
-    .nb_opt = 0,
-};
-
-Optparse kmalloc_ebpf_opt[1] = {
-    {
-        .longname = "kmalloc_ebpf",
-        .shortname = 'K',
-        .argtype = OPTPARSE_REQUIRED,
-        .usage_arg = "à déterminer",
-        .usage_msg = "à déterminer",
-    },
-};*/
+uint64_t modulo_substraction(const uint64_t lhs, const uint64_t rhs)
+{
+    return lhs >= rhs ? (lhs - rhs)
+           : (UINT64_MAX - rhs + 1) + lhs;
+}
