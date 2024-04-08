@@ -35,7 +35,7 @@ EbpfProg *build_keyfinder(unsigned int count, unsigned int *indexes)
     EbpfProg *keys = (EbpfProg *)calloc(count, sizeof(EbpfProg));
     for (unsigned int i = 0; i < count; i++) {
         unsigned int idx = indexes[i];
-        EbpfProg key = { .init =
+        EbpfProg key = { .init = 
                          .get =
                          .clean =
                          .name = ebpf_counters[i];
@@ -103,6 +103,12 @@ unsigned int init_ebpf_counters(char *args, void **ptr)
 unsigned int get_memory_counters(uint64_t *results, void *ptr)
 {
     EbpfCounters *counters = (EbpfCounters *)ptr;
+    int j=0;
+    for (int i =0;i < couters -> count; i++){
+
+        
+
+    }
 
 
     return counters->count;
