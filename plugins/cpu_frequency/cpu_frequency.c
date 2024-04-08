@@ -63,7 +63,6 @@ char *_labels_cpu_frequency_ebpf[NB_SENSOR] = {
 
 struct Freq {
     uint64_t values[NB_DATA];
-    uint64_t tmp_values[NB_DATA];
     struct cpu_frequency_bpf *skel;
     char labels[NB_DATA][128];
     int error;
@@ -138,9 +137,8 @@ unsigned int get_cpu_frequency_ebpf(uint64_t *results, void *ptr)
         }
 
 
-        results[i] = state->tmp_values[i];
-        
-        state->tmp_values[i] = val; 
+        results[i] = val;
+    
 
     }
 
