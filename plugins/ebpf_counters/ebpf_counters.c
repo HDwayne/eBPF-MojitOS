@@ -11,9 +11,18 @@
 inclure les fichiers skel.h de tous les counters
 
 */
+typedef struct{
+
+    void init;
+    void get;
+    void clean;
+    void label;
+    char * name;
+
+} EbpfProg;
 
 typedef struct {
- 
+    EbpfProg *keys;
     unsigned int count;
     
 } EbpfCounters;
@@ -21,17 +30,18 @@ typedef struct {
 
 
 
-KeyFinder *build_keyfinder(unsigned int count, unsigned int *indexes)
+EbpfProg *build_keyfinder(unsigned int count, unsigned int *indexes)
 {
-    KeyFinder *keys = (KeyFinder *)calloc(count, sizeof(KeyFinder));
+    EbpfProg *keys = (EbpfProg *)calloc(count, sizeof(EbpfProg));
     for (unsigned int i = 0; i < count; i++) {
         unsigned int idx = indexes[i];
-        KeyFinder key = {.key = memory_counters[idx],
-                         .delimiter = ":",
-                         .copy = long_allocator,
-                         .set = setter_functions[i]
-                        };
-        memcpy(&keys[i], &key, sizeof(KeyFinder));
+        EbpfProg key = { .init =
+                         .get =
+                         .clean =
+                         .name = ebpf_counters[i];
+
+        };
+        memcpy(&keys[i], &key, sizeof(EbpfProg));
     }
     return keys;
 }
@@ -77,7 +87,13 @@ unsigned int init_ebpf_counters(char *args, void **ptr)
     unsigned int count = 0;
     memory_list(args, &count, indexes);
 
+
+
+    EbpfProg *keys = build_keyfinder(count, indexes);
+
     EbpfCounters *counters = calloc(1, sizeof(EbpfCounters));
+    counters -> keys = keys;
+    counters -> count = count;
    
 
     *ptr = (void *)counters;
@@ -96,14 +112,14 @@ void label_memory_counters(char **labels, void *ptr)
 {
     EbpfCounters *counters = (EbpfCounters *)ptr;
     for (unsigned int i = 0; i < counters->count; i++) {
-        labels[i] = counters->keys[i].key;
+        labels[i] = counters->keys[i].name;
     }
 }
 
 void clean_memory_counters(void *ptr)
 {
     EbpfCounters *counters = (EbpfCounters *)ptr;
-    
+
     free(counters->keys);
     free(ptr);
 }
