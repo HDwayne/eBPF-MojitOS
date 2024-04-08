@@ -51,6 +51,8 @@ unsigned int init_kmalloc_ebpf(char *dev , void **ptr){
     memset(state, '\0', sizeof(*state));
 
     state->skel = kmalloc_ebpf_bpf__open();
+    snprintf(state->labels[0], sizeof(state->labels[0]), _labels_kmalloc_ebpf[0],"bytes_req");
+    snprintf(state->labels[1], sizeof(state->labels[1]), _labels_kmalloc_ebpf[1],"bytes_alloc");
 
     if(!(state->skel)){
         printf("Impossible d'ouvrir le programme\n");
