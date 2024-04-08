@@ -31,12 +31,11 @@ int kmalloc(struct s_mystruct *ctx)
 {
 
     
-    uint64_t bytes_req = (uint64_t)ctx->bytes_req;
-	uint64_t bytes_alloc = (uint64_t)ctx->bytes_alloc;
+    uint64_t bytes_req = ctx->bytes_req;
+	uint64_t bytes_alloc = ctx->bytes_alloc;
 
-    size_t *rec ;
+    uint64_t *rec ;
     int key=0;
-    //for ( int key=0 ;  key < 2; key+=1 ){
 
     rec = bpf_map_lookup_elem(&data_kmalloc,&key);
 
@@ -45,7 +44,11 @@ int kmalloc(struct s_mystruct *ctx)
         return 1;
     }
 
-    __sync_fetch_and_add(rec,bytes_req);
+    *rec += bytes_req;
+
+     bpf_map_update_elem(&data_kmalloc, &key, rec, BPF_ANY);
+
+    //__sync_fetch_and_add(rec,bytes_req);
 
     key++;
 
@@ -56,7 +59,10 @@ int kmalloc(struct s_mystruct *ctx)
         return 1;
     }
 
-     __sync_fetch_and_add(rec,bytes_alloc);
+    *rec += bytes_alloc;
+
+     //__sync_fetch_and_add(rec,bytes_alloc);
+    bpf_map_update_elem(&data_kmalloc, &key, rec, BPF_ANY);
 
     return 0;
 }
