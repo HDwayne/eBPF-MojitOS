@@ -43,9 +43,9 @@ int mmap(struct s_mystruct *ctx)
 		bpf_printk("Erreur : récupération des données dans la map impossible\n");
         return 1;
     }
-    bpf_map_update_elem(&data_mmap,&key,&addr, BPF_ANY);
+    //bpf_map_update_elem(&data_mmap,&key,&addr, BPF_ANY);
 
-    //__sync_fetch_and_add(rec,addr);
+    __sync_fetch_and_add(rec,addr);
 
     key++;
 
@@ -56,8 +56,8 @@ int mmap(struct s_mystruct *ctx)
         return 1;
     }
 
-    bpf_map_update_elem(&data_mmap,&key,&bytes_len, BPF_ANY);
-    //__sync_fetch_and_add((unsigned long*)rec,bytes_len);
+    //bpf_map_update_elem(&data_mmap,&key,&bytes_len, BPF_ANY);
+    __sync_fetch_and_add((unsigned long*)rec,bytes_len);
 
     return 0;
 }

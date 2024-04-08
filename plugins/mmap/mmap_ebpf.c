@@ -20,8 +20,8 @@ char *_labels_mmap_ebpf[NB_SENSOR] = {
 };
 
 struct Mmap {
-    uint64_t values[NB_SENSOR];
-    uint64_t tmp_values[NB_SENSOR];
+    unsigned long values[NB_SENSOR];
+    unsigned long tmp_values[NB_SENSOR];
     struct mmap_ebpf_bpf *skel;
     char labels[NB_SENSOR][128];
     int error;
@@ -47,10 +47,12 @@ unsigned int init_mmap_ebpf(char *dev , void **ptr){
         exit(1);
     }
 
-    struct Mmap*state = malloc(sizeof(struct Mmap));
+    struct Mmap* state = malloc(sizeof(struct Mmap));
     memset(state, '\0', sizeof(*state));
 
     state->skel = mmap_ebpf_bpf__open();
+    snprintf(state->labels[0], sizeof(state->labels[0]), _labels_mmap_ebpf[0],"addr");
+    snprintf(state->labels[1], sizeof(state->labels[1]), _labels_mmap_ebpf[1],"len");
 
     if(!(state->skel)){
         printf("Impossible d'ouvrir le programme\n");
@@ -67,6 +69,8 @@ unsigned int init_mmap_ebpf(char *dev , void **ptr){
         
     }
 
+    mmap_ebpf_bpf__attach(state->skel);
+
     state->ndata=NB_SENSOR;
 
     *ptr = (void *) state;
@@ -81,7 +85,7 @@ unsigned int get_mmap_ebpf(uint64_t *results, void *ptr){
 
     Mmap *state = ( Mmap *)ptr;
 
-    uint64_t bytes;
+    unsigned long bytes;
 
 
 
@@ -92,8 +96,8 @@ unsigned int get_mmap_ebpf(uint64_t *results, void *ptr){
             clean_mmap_ebpf(state);
             exit(ERROR_ACCESS_ELEM);
         }
-        results[i] = bytes;
-        //results[i] = modulo_substraction(bytes,state->tmp_values[i]);
+        //results[i] = bytes;
+        results[i] = modulo_substraction(bytes,state->tmp_values[i]);
 
         state->tmp_values[i]= bytes;
 
@@ -155,7 +159,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    uint64_t tab_res[nb];char **labels = (char **)malloc(nb*sizeof(char*));
+    uint64_t tab_res[nb];
+    char **labels = (char **)malloc(nb*sizeof(char*));
 
     label_mmap_ebpf(labels,ptr);
 
