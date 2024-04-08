@@ -6,6 +6,38 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* 
+
+inclure les fichiers skel.h de tous les counters
+
+*/
+
+typedef struct {
+ 
+    unsigned int count;
+    
+} EbpfCounters;
+
+
+
+
+KeyFinder *build_keyfinder(unsigned int count, unsigned int *indexes)
+{
+    KeyFinder *keys = (KeyFinder *)calloc(count, sizeof(KeyFinder));
+    for (unsigned int i = 0; i < count; i++) {
+        unsigned int idx = indexes[i];
+        KeyFinder key = {.key = memory_counters[idx],
+                         .delimiter = ":",
+                         .copy = long_allocator,
+                         .set = setter_functions[i]
+                        };
+        memcpy(&keys[i], &key, sizeof(KeyFinder));
+    }
+    return keys;
+}
+
+
+
 
 void ebpf_list(char *ebpf_string, unsigned int *count,
                  unsigned int *indexes)
@@ -45,13 +77,8 @@ unsigned int init_ebpf_counters(char *args, void **ptr)
     unsigned int count = 0;
     memory_list(args, &count, indexes);
 
-    KeyFinder *keys = build_keyfinder(count, indexes);
-    FILE *file = fopen(path, "r");
-
-    MemoryCounters *counters = calloc(1, sizeof(MemoryCounters));
-    counters->keys = keys;
-    counters->count = count;
-    counters->file = file;
+    EbpfCounters *counters = calloc(1, sizeof(EbpfCounters));
+   
 
     *ptr = (void *)counters;
     return count;
@@ -59,24 +86,15 @@ unsigned int init_ebpf_counters(char *args, void **ptr)
 
 unsigned int get_memory_counters(uint64_t *results, void *ptr)
 {
-    MemoryCounters *counters = (MemoryCounters *)ptr;
-    fseek(counters->file, 0, SEEK_SET);
-    Parser parser = {.storage = (GenericPointer)results,
-                     .capacity = 1,
-                     .nb_stored = 0,
-                     .storage_struct_size = sizeof(uint64_t) * counters->count,
-                     .keys = counters->keys,
-                     .nb_keys = counters->count,
-                     .file = counters->file
-                    };
+    EbpfCounters *counters = (EbpfCounters *)ptr;
 
-    parse(&parser);
+
     return counters->count;
 }
 
 void label_memory_counters(char **labels, void *ptr)
 {
-    MemoryCounters *counters = (MemoryCounters *)ptr;
+    EbpfCounters *counters = (EbpfCounters *)ptr;
     for (unsigned int i = 0; i < counters->count; i++) {
         labels[i] = counters->keys[i].key;
     }
@@ -84,8 +102,8 @@ void label_memory_counters(char **labels, void *ptr)
 
 void clean_memory_counters(void *ptr)
 {
-    MemoryCounters *counters = (MemoryCounters *)ptr;
-    fclose(counters->file);
+    EbpfCounters *counters = (EbpfCounters *)ptr;
+    
     free(counters->keys);
     free(ptr);
 }
