@@ -95,6 +95,7 @@ unsigned int get_kmalloc_ebpf(uint64_t *results, void *ptr){
 
   
         results[i] = modulo_substraction(bytes,state->tmp_values[i]);
+        //results[i]= bytes;
 
         state->tmp_values[i]= bytes;
 
@@ -125,7 +126,7 @@ void clean_kmalloc_ebpf(void *ptr){
 
         kmalloc_ebpf_bpf__destroy(state->skel);
     }
-    
+
     free(state);
 
 
