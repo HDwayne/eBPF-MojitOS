@@ -67,6 +67,16 @@ unsigned int init_kmalloc_ebpf(char *dev , void **ptr){
         
     }
 
+    if( kmalloc_ebpf_bpf__attach(state->skel) < 0 ){
+        printf("impossible de charger le programme dans le kernel\n");
+        state->error=ERROR_LOAD_PROG;
+        clean_kmalloc_ebpf(state);
+        exit(ERROR_LOAD_PROG);
+        
+    }
+
+
+
     state->ndata=NB_SENSOR;
 
     *ptr = (void *) state;
