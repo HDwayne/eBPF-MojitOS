@@ -101,6 +101,8 @@ unsigned int init_cpu_frequency_ebpf(void **ptr)
     }
 
 
+
+
     if( cpu_frequency_bpf__load(state->skel) < 0 ){
         printf("impossible de charger le programme dans le kernel\n");
         state->error=ERROR_LOAD_PROG;
@@ -108,6 +110,15 @@ unsigned int init_cpu_frequency_ebpf(void **ptr)
         exit(ERROR_LOAD_PROG);
         
     }
+
+
+
+    cpu_frequency_bpf__attach(state->skel);
+
+
+
+
+
     *ptr = (void *) state;
 
 
@@ -124,12 +135,12 @@ unsigned int get_cpu_frequency_ebpf(uint64_t *results, void *ptr)
 {
     Freq *state = ( Freq *)ptr;
 
-    int val;
+    __u32 val;
 
 
     for (int i = 0; i < NB_DATA; i++) {
 
-        if (bpf_map__lookup_elem(state->skel->maps.perf_map,&i,sizeof(int),&val,sizeof(int),BPF_ANY) <0){
+        if (bpf_map__lookup_elem(state->skel->maps.perf_map,&i,sizeof(__u32),&val,sizeof(__u32),BPF_ANY) <0){
             printf("Erreur : impossible de lire les informations contenus dans les maps \n");
             state->error=ERROR_ACCESS_ELEM;
             clean_cpu_frequency_ebpf(state);
