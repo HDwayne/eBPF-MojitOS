@@ -42,14 +42,14 @@
 #define NB_SENSOR 1
 #define NB_DATA 1
 
-char *_labels_plugin_ebpf[NB_SENSOR] = {
-    "%s:frequency",
+char *_labels_cpu_frequency_ebpf[NB_SENSOR] = {
+    "%s",
 };
 
 struct Freq {
     uint64_t values[NB_DATA];
     uint64_t tmp_values[NB_DATA];
-    struct cpu_frequency *skel;
+    struct cpu_frequency_bpf *skel;
     char labels[NB_DATA][128];
     int error;
 };
@@ -57,17 +57,25 @@ struct Freq {
 typedef struct Freq Freq;
 
 
-unsigned int init_cpu_frequency_ebpf(char *dev, void **ptr)
+
+int fin = 0;
+static void signaltrap(int signo)
+{
+    fin = 1;
+}
+
+void clean_cpu_frequency_ebpf(void *ptr);
+
+
+unsigned int init_cpu_frequency_ebpf(void **ptr)
 {
 
-    if(dev==NULL){
-        exit(1);
-    }
-
-    struct Plugin *state = malloc(sizeof(struct Plugin));
+    struct Freq *state = malloc(sizeof(struct Freq));
     memset(state, '\0', sizeof(*state));
 
     state->skel = cpu_frequency_bpf__open();
+
+    snprintf(state->labels[0], sizeof(state->labels[0]), _labels_cpu_frequency_ebpf[0],"frequency");
 
     if(!(state->skel)){
         printf("Impossible d'ouvrir le programme\n");
@@ -104,7 +112,7 @@ unsigned int get_cpu_frequency_ebpf(uint64_t *results, void *ptr)
 
     for (int i = 0; i < NB_DATA; i++) {
 
-        if (bpf_map__lookup_elem(state->skel,&i,sizeof(int),&val,sizeof(int),BPF_ANY) <0){
+        if (bpf_map__lookup_elem(state->skel->maps.perf_map,&i,sizeof(int),&val,sizeof(int),BPF_ANY) <0){
             printf("Erreur : impossible de lire les informations contenus dans les maps \n");
             state->error=ERROR_ACCESS_ELEM;
             clean_cpu_frequency_ebpf(state);
@@ -137,7 +145,6 @@ void clean_cpu_frequency_ebpf(void *ptr){
 
         cpu_frequency_bpf__destroy(state->skel);
     }
-    free(state->skel);
     free(state);
 }
 
@@ -146,7 +153,51 @@ void label_cpu_frequency_ebpf(char **labels, void *ptr)
 {
     struct Freq *state = (struct Freq *) ptr;
 
-    for (int i = 0; i < state->ndev; i++) {
+    for (int i = 0; i < NB_DATA; i++) {
         labels[i] = state->labels[i];
     }
+}
+
+
+
+//----------à elever lors de la release----------------------//
+
+int main(int argc, char *argv[])
+{
+    signal(SIGINT,signaltrap);
+    void *ptr = NULL;
+
+    int nb;
+    if( (nb=init_cpu_frequency_ebpf(&ptr))<0){
+        return 1;
+    }
+
+    uint64_t tab_res[nb];char **labels = (char **)malloc(nb*sizeof(char*));
+
+    label_cpu_frequency_ebpf(labels,ptr);
+
+    for(int i=0;i<nb;i++){
+       printf("%s ",labels[i]);
+    }
+    printf("\n");
+
+    while (true)
+    {
+        if(fin==1){
+            printf("Arrêt du programme\n");
+
+            clean_cpu_frequency_ebpf(ptr);
+            exit(0);
+        }
+        if(get_cpu_frequency_ebpf(tab_res,ptr)<0){
+            return 2;
+        }
+        for(int i=0;i<nb;i++){
+            printf("%ld ",tab_res[i]);
+        }
+        printf("\n");
+        sleep(1);
+    }
+    
+    return 0;
 }

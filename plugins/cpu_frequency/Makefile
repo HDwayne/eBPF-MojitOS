@@ -1,4 +1,4 @@
-BIN="test"
+BIN="cpu_frequency"
 
 all:
 	@bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
