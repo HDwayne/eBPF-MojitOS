@@ -39,11 +39,26 @@
 #define ERROR_LOAD_PROG -2
 #define ERROR_ACCESS_ELEM -3
 
-#define NB_SENSOR 1
-#define NB_DATA 1
+#define NB_SENSOR 16
+#define NB_DATA 16
 
 char *_labels_cpu_frequency_ebpf[NB_SENSOR] = {
-    "%s",
+    "%s:cpu0",
+    "%s:cpu1",
+    "%s:cpu2",
+    "%s:cpu3",
+    "%s:cpu4",
+    "%s:cpu5",
+    "%s:cpu6",
+    "%s:cpu7",
+    "%s:cpu8",
+    "%s:cpu9",
+    "%s:cpu10",
+    "%s:cpu11",
+    "%s:cpu12",
+    "%s:cpu13",
+    "%s:cpu14",
+    "%s:cpu15",
 };
 
 struct Freq {
@@ -75,7 +90,10 @@ unsigned int init_cpu_frequency_ebpf(void **ptr)
 
     state->skel = cpu_frequency_bpf__open();
 
-    snprintf(state->labels[0], sizeof(state->labels[0]), _labels_cpu_frequency_ebpf[0],"frequency");
+
+    for (int i=0;i<NB_DATA;i++){
+        snprintf(state->labels[i], sizeof(state->labels[i]), _labels_cpu_frequency_ebpf[i],"frequency");
+    }
 
     if(!(state->skel)){
         printf("Impossible d'ouvrir le programme\n");
