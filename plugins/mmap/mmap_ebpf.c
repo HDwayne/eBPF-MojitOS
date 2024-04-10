@@ -6,7 +6,7 @@
 #include "util.h"
 #include "mmap_ebpf.skel.h"
 
-#define NB_SENSOR 2
+#define NB_SENSOR 3
 
 
 #define ERROR_OPEN_PROG -1
@@ -17,6 +17,7 @@
 char *_labels_mmap_ebpf[NB_SENSOR] = {
     "%s:bytes_addr",
     "%s:bytes_len",
+    "%s:nb_times",
 };
 
 struct Mmap {
@@ -53,6 +54,7 @@ unsigned int init_mmap_ebpf(char *dev , void **ptr){
     state->skel = mmap_ebpf_bpf__open();
     snprintf(state->labels[0], sizeof(state->labels[0]), _labels_mmap_ebpf[0],"addr");
     snprintf(state->labels[1], sizeof(state->labels[1]), _labels_mmap_ebpf[1],"len");
+    snprintf(state->labels[2], sizeof(state->labels[2]), _labels_mmap_ebpf[2],"compteur");
 
     if(!(state->skel)){
         printf("Impossible d'ouvrir le programme\n");
@@ -96,8 +98,13 @@ unsigned int get_mmap_ebpf(uint64_t *results, void *ptr){
             clean_mmap_ebpf(state);
             exit(ERROR_ACCESS_ELEM);
         }
-        //results[i] = bytes;
-        results[i] = modulo_substraction(bytes,state->tmp_values[i]);
+        
+        if (i==1){
+        	results[i] = modulo_substraction(bytes,state->tmp_values[i]);
+        }
+        else{
+        	results[i] = bytes;
+        }
 
         state->tmp_values[i]= bytes;
 
