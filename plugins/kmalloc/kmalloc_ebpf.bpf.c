@@ -23,7 +23,7 @@ struct {
 	__uint(type,BPF_MAP_TYPE_ARRAY);
 	__type(key,int);
 	__type(value,uint64_t);
-	__uint(max_entries,2);
+	__uint(max_entries,3);
 } data_kmalloc SEC(".maps");
 
 SEC("tracepoint/kmem/kmalloc")
@@ -63,6 +63,23 @@ int kmalloc(struct s_mystruct *ctx)
 
      //__sync_fetch_and_add(rec,bytes_alloc);
     bpf_map_update_elem(&data_kmalloc, &key, rec, BPF_ANY);
+
+    key++;
+
+    rec = bpf_map_lookup_elem(&data_kmalloc,&key);
+
+    if(!rec){
+		bpf_printk("Erreur : récupération des données dans la map impossible\n");
+        return 1;
+    }
+
+    *rec += 1;
+
+    bpf_map_update_elem(&data_kmalloc, &key, rec, BPF_ANY);
+
+
+
+
 
     return 0;
 }

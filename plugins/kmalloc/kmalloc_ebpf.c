@@ -6,7 +6,7 @@
 #include "util.h"
 #include "kmalloc_ebpf.skel.h"
 
-#define NB_SENSOR 2
+#define NB_SENSOR 3
 
 
 #define ERROR_OPEN_PROG -1
@@ -17,6 +17,7 @@
 char *_labels_kmalloc_ebpf[NB_SENSOR] = {
     "%s:bytes_req",
     "%s:bytes_alloc",
+    "%s:nb_appel",
 };
 
 struct Kmalloc {
@@ -43,16 +44,13 @@ void clean_kmalloc_ebpf(void *ptr);
 unsigned int init_kmalloc_ebpf(char *dev , void **ptr){
 
 
-    if(dev==NULL){
-        exit(1);
-    }
-
     struct Kmalloc*state = malloc(sizeof(struct Kmalloc));
     memset(state, '\0', sizeof(*state));
 
     state->skel = kmalloc_ebpf_bpf__open();
     snprintf(state->labels[0], sizeof(state->labels[0]), _labels_kmalloc_ebpf[0],"bytes_req");
     snprintf(state->labels[1], sizeof(state->labels[1]), _labels_kmalloc_ebpf[1],"bytes_alloc");
+    snprintf(state->labels[1], sizeof(state->labels[1]), _labels_kmalloc_ebpf[2],"nb_appel");
 
     if(!(state->skel)){
         printf("Impossible d'ouvrir le programme\n");
