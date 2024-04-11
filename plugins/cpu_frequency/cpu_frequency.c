@@ -37,38 +37,60 @@
 
 #define ERROR_OPEN_PROG -1
 #define ERROR_LOAD_PROG -2
-#define ERROR_ACCESS_ELEM -3
+#define ERROR_ATTACH_PROG -3
+#define ERROR_ACCESS_ELEM -4
 
-#define NB_SENSOR 16
+#define NB_SENSOR 32
 #define NB_DATA 16
 
 char *_labels_cpu_frequency_ebpf[NB_SENSOR] = {
     "%s:cpu0",
+    "%s:cpu0",
+    "%s:cpu1",
     "%s:cpu1",
     "%s:cpu2",
+    "%s:cpu2",
+    "%s:cpu3",
     "%s:cpu3",
     "%s:cpu4",
+    "%s:cpu4",
+    "%s:cpu5",
     "%s:cpu5",
     "%s:cpu6",
+    "%s:cpu6",
+    "%s:cpu7",
     "%s:cpu7",
     "%s:cpu8",
+    "%s:cpu8",
+    "%s:cpu9",
     "%s:cpu9",
     "%s:cpu10",
+    "%s:cpu10",
+    "%s:cpu11",
     "%s:cpu11",
     "%s:cpu12",
+    "%s:cpu12",
+    "%s:cpu13",
     "%s:cpu13",
     "%s:cpu14",
+    "%s:cpu14",
+    "%s:cpu15",
     "%s:cpu15",
 };
 
 struct Freq {
     uint64_t values[NB_DATA];
     struct cpu_frequency_bpf *skel;
-    char labels[NB_DATA][128];
+    // time_compteur_temp[NB_DATA];
+    // time_compteur[NB_DATA];
+    int nb_freq_switch[NB_DATA];
+    char labels[NB_SENSOR][128];
     int error;
 };
 
 typedef struct Freq Freq;
+
+
 
 
 
@@ -84,14 +106,16 @@ void clean_cpu_frequency_ebpf(void *ptr);
 unsigned int init_cpu_frequency_ebpf(void **ptr)
 {
 
+
     struct Freq *state = malloc(sizeof(struct Freq));
     memset(state, '\0', sizeof(*state));
 
     state->skel = cpu_frequency_bpf__open();
 
 
-    for (int i=0;i<NB_DATA;i++){
+    for (int i=0;i<NB_SENSOR;i+=2){
         snprintf(state->labels[i], sizeof(state->labels[i]), _labels_cpu_frequency_ebpf[i],"frequency");
+        snprintf(state->labels[i+1], sizeof(state->labels[i+1]), _labels_cpu_frequency_ebpf[i+1],"switch_freq");
     }
 
     if(!(state->skel)){
@@ -113,10 +137,12 @@ unsigned int init_cpu_frequency_ebpf(void **ptr)
 
 
 
-    cpu_frequency_bpf__attach(state->skel);
-
-
-
+    if (cpu_frequency_bpf__attach(state->skel) <0){
+        printf("impossible d'attacher le programme \n");
+        state->error=ERROR_ATTACH_PROG;
+        clean_cpu_frequency_ebpf(state);
+        exit(ERROR_ATTACH_PROG);
+    }
 
 
     *ptr = (void *) state;
@@ -147,8 +173,15 @@ unsigned int get_cpu_frequency_ebpf(uint64_t *results, void *ptr)
             exit(ERROR_ACCESS_ELEM);
         }
 
+        if (state->values[i]!=val){
+            state->nb_freq_switch[i]+=1;
+        }
 
-        results[i] = val;
+        state->values[i]=val;
+
+
+        results[i*2] = val;
+        results[i*2+1] = state->nb_freq_switch[i];
     
 
     }
@@ -165,8 +198,9 @@ void clean_cpu_frequency_ebpf(void *ptr){
 
     if ( state ->error < -1 || state->error == 0 ){
 
-        if ( state->error < -3 || state->error == 0 ){
 
+
+        if (state->error < -2 || state->error == 0){
             cpu_frequency_bpf__detach(state->skel);
         }
 
@@ -180,8 +214,9 @@ void label_cpu_frequency_ebpf(char **labels, void *ptr)
 {
     struct Freq *state = (struct Freq *) ptr;
 
-    for (int i = 0; i < NB_DATA; i++) {
+    for (int i = 0; i < NB_SENSOR; i++) {
         labels[i] = state->labels[i];
+
     }
 }
 
