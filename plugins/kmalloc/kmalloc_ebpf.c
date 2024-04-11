@@ -12,12 +12,13 @@
 #define ERROR_OPEN_PROG -1
 #define ERROR_LOAD_PROG -2
 #define ERROR_ACCESS_ELEM -3
+#define ERROR_NB_PARAMS -4
 
 
 char *_labels_kmalloc_ebpf[NB_SENSOR] = {
-    "%s:bytes_req",
-    "%s:bytes_alloc",
-    "%s:nb_appel",
+    "bytes_req",
+    "bytes_alloc",
+    "nb_appel",
 };
 
 struct Kmalloc {
@@ -44,13 +45,18 @@ void clean_kmalloc_ebpf(void *ptr);
 unsigned int init_kmalloc_ebpf(char *dev , void **ptr){
 
 
+    if(dev != NULL){
+        printf("le nombre paramètre pour ce plugin doit être nul\n");
+        exit(ERROR_NB_PARAMS);
+    }
+
     struct Kmalloc*state = malloc(sizeof(struct Kmalloc));
     memset(state, '\0', sizeof(*state));
 
     state->skel = kmalloc_ebpf_bpf__open();
     snprintf(state->labels[0], sizeof(state->labels[0]), _labels_kmalloc_ebpf[0],"bytes_req");
     snprintf(state->labels[1], sizeof(state->labels[1]), _labels_kmalloc_ebpf[1],"bytes_alloc");
-    snprintf(state->labels[1], sizeof(state->labels[1]), _labels_kmalloc_ebpf[2],"nb_appel");
+    snprintf(state->labels[2], sizeof(state->labels[2]), _labels_kmalloc_ebpf[2],"nb_appel");
 
     if(!(state->skel)){
         printf("Impossible d'ouvrir le programme\n");
