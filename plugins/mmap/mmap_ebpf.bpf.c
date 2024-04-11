@@ -23,26 +23,17 @@ struct {
 	__uint(type,BPF_MAP_TYPE_ARRAY);
 	__type(key,int);
 	__type(value,unsigned long);
-	__uint(max_entries,3);
+	__uint(max_entries,2);
 } data_mmap SEC(".maps");
 
 SEC("tp/syscalls/sys_enter_mmap")
 int mmap(struct s_mystruct *ctx)
 {
 
-    
-    unsigned long addr = ctx->addr;
 	unsigned long bytes_len = ctx->len;
 
-    unsigned long *rec ;
+    unsigned long *rec;
     int key=0;
-
-    
-    bpf_map_update_elem(&data_mmap,&key,&addr, BPF_ANY);
-
-    //__sync_fetch_and_add(rec,addr);
-
-    key++;
 
     rec = bpf_map_lookup_elem(&data_mmap,&key);
 
