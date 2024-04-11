@@ -104,8 +104,8 @@ unsigned int get_kmalloc_ebpf(uint64_t *results, void *ptr){
         }
 
   
-        results[i] = modulo_substraction(bytes,state->tmp_values[i]);
-        //results[i]= bytes;
+        //results[i] = modulo_substraction(bytes,state->tmp_values[i]);
+        results[i]= bytes;
 
         state->tmp_values[i]= bytes;
 
