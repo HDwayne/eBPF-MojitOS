@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #include <ifaddrs.h>
 #include <net/if.h>
-//#include "plugin_ebpf.h"
+#include "cpu_frequency.h"
 #include <time.h>
 #include "cpu_frequency.skel.h"
 
@@ -253,48 +253,4 @@ void label_cpu_frequency_ebpf(char **labels, void *ptr)
         labels[i] = state->labels[i];
 
     }
-}
-
-
-
-//----------à elever lors de la release----------------------//
-
-int main(int argc, char *argv[])
-{
-    signal(SIGINT,signaltrap);
-    void *ptr = NULL;
-
-    int nb;
-    if( (nb=init_cpu_frequency_ebpf(&ptr))<0){
-        return 1;
-    }
-
-    uint64_t tab_res[nb];char **labels = (char **)malloc(nb*sizeof(char*));
-
-    label_cpu_frequency_ebpf(labels,ptr);
-
-    for(int i=0;i<nb;i++){
-       printf("%s ",labels[i]);
-    }
-    printf("\n");
-
-    while (true)
-    {
-        if(fin==1){
-            printf("Arrêt du programme\n");
-
-            clean_cpu_frequency_ebpf(ptr);
-            exit(0);
-        }
-        if(get_cpu_frequency_ebpf(tab_res,ptr)<0){
-            return 2;
-        }
-        for(int i=0;i<nb;i++){
-            printf("%ld ",tab_res[i]);
-        }
-        printf("\n");
-        sleep(1);
-    }
-    
-    return 0;
 }
