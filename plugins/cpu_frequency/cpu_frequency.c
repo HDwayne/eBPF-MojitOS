@@ -32,8 +32,7 @@
 #include <sys/types.h>
 #include <ifaddrs.h>
 #include <net/if.h>
-#include "cpu_frequency.h"
-#include <time.h>
+//#include "plugin_ebpf.h"
 #include "cpu_frequency.skel.h"
 
 #define ERROR_OPEN_PROG -1
@@ -41,56 +40,40 @@
 #define ERROR_ATTACH_PROG -3
 #define ERROR_ACCESS_ELEM -4
 
-#define NB_SENSOR 48
+#define NB_SENSOR 32
 #define NB_DATA 16
 
 char *_labels_cpu_frequency_ebpf[NB_SENSOR] = {
     "%s:cpu0",
     "%s:cpu0",
-    "%s:cou0",
-    "%s:cpu1",
     "%s:cpu1",
     "%s:cpu1",
     "%s:cpu2",
     "%s:cpu2",
-    "%s:cpu2",
-    "%s:cpu3",
     "%s:cpu3",
     "%s:cpu3",
     "%s:cpu4",
     "%s:cpu4",
-    "%s:cpu4",
-    "%s:cpu5",
     "%s:cpu5",
     "%s:cpu5",
     "%s:cpu6",
     "%s:cpu6",
-    "%s:cpu6",
-    "%s:cpu7",
     "%s:cpu7",
     "%s:cpu7",
     "%s:cpu8",
     "%s:cpu8",
-    "%s:cpu8",
-    "%s:cpu9",
     "%s:cpu9",
     "%s:cpu9",
     "%s:cpu10",
     "%s:cpu10",
-    "%s:cpu10",
-    "%s:cpu11",
     "%s:cpu11",
     "%s:cpu11",
     "%s:cpu12",
     "%s:cpu12",
-    "%s:cpu12",
-    "%s:cpu13",
     "%s:cpu13",
     "%s:cpu13",
     "%s:cpu14",
     "%s:cpu14",
-    "%s:cpu14",
-    "%s:cpu15",
     "%s:cpu15",
     "%s:cpu15",
 };
@@ -98,7 +81,8 @@ char *_labels_cpu_frequency_ebpf[NB_SENSOR] = {
 struct Freq {
     uint64_t values[NB_DATA];
     struct cpu_frequency_bpf *skel;
-    long time_compteur[NB_DATA];
+    // time_compteur_temp[NB_DATA];
+    // time_compteur[NB_DATA];
     int nb_freq_switch[NB_DATA];
     char labels[NB_SENSOR][128];
     int error;
@@ -128,6 +112,12 @@ unsigned int init_cpu_frequency_ebpf(void **ptr)
 
     state->skel = cpu_frequency_bpf__open();
 
+
+    for (int i=0;i<NB_SENSOR;i+=2){
+        snprintf(state->labels[i], sizeof(state->labels[i]), _labels_cpu_frequency_ebpf[i],"frequency");
+        snprintf(state->labels[i+1], sizeof(state->labels[i+1]), _labels_cpu_frequency_ebpf[i+1],"switch_freq");
+    }
+
     if(!(state->skel)){
         printf("Impossible d'ouvrir le programme\n");
         state->error=ERROR_OPEN_PROG;
@@ -155,23 +145,6 @@ unsigned int init_cpu_frequency_ebpf(void **ptr)
     }
 
 
-
-    for (int i=0;i<NB_SENSOR;i+=3){
-        snprintf(state->labels[i], sizeof(state->labels[i]), _labels_cpu_frequency_ebpf[i],"frequency");
-        snprintf(state->labels[i+1], sizeof(state->labels[i+1]), _labels_cpu_frequency_ebpf[i+1],"switch_freq");
-        snprintf(state->labels[i+2], sizeof(state->labels[i+2]), _labels_cpu_frequency_ebpf[i+2],"time_freq");
-    }
-
-
-    time_t t;
-    time(&t);
-
-    //initialisation du compteur de temps pour chaque coeur
-    for(int i=0;i<NB_DATA;i++){
-        state->time_compteur[i]=t;
-    }
-
-
     *ptr = (void *) state;
 
 
@@ -188,9 +161,7 @@ unsigned int get_cpu_frequency_ebpf(uint64_t *results, void *ptr)
 {
     Freq *state = ( Freq *)ptr;
 
-    __u32 val;time_t t;
-
-    time(&t);
+    __u32 val;
 
 
     for (int i = 0; i < NB_DATA; i++) {
@@ -202,21 +173,15 @@ unsigned int get_cpu_frequency_ebpf(uint64_t *results, void *ptr)
             exit(ERROR_ACCESS_ELEM);
         }
 
-
-
-        results[i*3+2] = t-state->time_compteur[i];
-
         if (state->values[i]!=val){
-            
             state->nb_freq_switch[i]+=1;
-            state->time_compteur[i] = time(NULL);
-            results[i*3+2] = 0;
-
         }
 
         state->values[i]=val;
-        results[i*3] = val;
-        results[i*3+1] = state->nb_freq_switch[i];
+
+
+        results[i*2] = val;
+        results[i*2+1] = state->nb_freq_switch[i];
     
 
     }
@@ -253,4 +218,48 @@ void label_cpu_frequency_ebpf(char **labels, void *ptr)
         labels[i] = state->labels[i];
 
     }
+}
+
+
+
+//----------à elever lors de la release----------------------//
+
+int main(int argc, char *argv[])
+{
+    signal(SIGINT,signaltrap);
+    void *ptr = NULL;
+
+    int nb;
+    if( (nb=init_cpu_frequency_ebpf(&ptr))<0){
+        return 1;
+    }
+
+    uint64_t tab_res[nb];char **labels = (char **)malloc(nb*sizeof(char*));
+
+    label_cpu_frequency_ebpf(labels,ptr);
+
+    for(int i=0;i<nb;i++){
+       printf("%s ",labels[i]);
+    }
+    printf("\n");
+
+    while (true)
+    {
+        if(fin==1){
+            printf("Arrêt du programme\n");
+
+            clean_cpu_frequency_ebpf(ptr);
+            exit(0);
+        }
+        if(get_cpu_frequency_ebpf(tab_res,ptr)<0){
+            return 2;
+        }
+        for(int i=0;i<nb;i++){
+            printf("%ld ",tab_res[i]);
+        }
+        printf("\n");
+        sleep(1);
+    }
+    
+    return 0;
 }
