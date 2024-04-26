@@ -3,7 +3,6 @@
 #include <errno.h>
 #include <linux/bpf.h>
 #include <signal.h>
-#include "util.h"
 #include "mmap_ebpf.skel.h"
 
 #define NB_SENSOR 2
@@ -40,12 +39,7 @@ static void signaltrap(int signo)
 void clean_mmap_ebpf(void *ptr);
 
 
-unsigned int init_mmap_ebpf(char *dev , void **ptr){
-
-
-    if(dev==NULL){
-        exit(1);
-    }
+unsigned int init_mmap_ebpf(void **ptr){
 
     struct Mmap* state = malloc(sizeof(struct Mmap));
     memset(state, '\0', sizeof(*state));
@@ -156,7 +150,7 @@ int main(int argc, char *argv[])
     void *ptr = NULL;
 
     int nb;
-    if( (nb=init_mmap_ebpf(argv[1],&ptr))<0){
+    if( (nb=init_mmap_ebpf(&ptr))<0){
         return 1;
     }
 

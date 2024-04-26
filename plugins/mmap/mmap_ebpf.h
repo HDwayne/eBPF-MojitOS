@@ -18,7 +18,7 @@
 
  *******************************************************/
 
-unsigned int init_mmap_ebpf(char *, void **);
+unsigned int init_mmap_ebpf(void **);
 unsigned int get_mmap_ebpf(uint64_t *results, void *);
 void clean_mmap_ebpf(void *);
 void label_mmap_ebpf(char **labels, void *);
